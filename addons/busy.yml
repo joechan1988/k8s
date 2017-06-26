@@ -1,0 +1,25 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: busybox
+spec:
+  selector:
+    matchLabels:
+      app: busybox
+  template:
+    metadata:
+      labels:
+        app: busybox
+    spec:
+      containers:
+      - name: busybox
+        image: busybox
+        imagePullPolicy: IfNotPresent
+        args: 
+        - sleep
+        - "1000000"
+      tolerations: 
+      - key : "node-role.kubernetes.io/master"
+        operator: "Equal"
+        effect: "NoSchedule"
+

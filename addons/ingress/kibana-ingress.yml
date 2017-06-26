@@ -1,0 +1,22 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: kibana
+  namespace: kube-system
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    traefik.frontend.rule.type: pathprefix
+spec:
+  rules:
+  - host: wocloud.guian.local
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: kibana-logging
+          servicePort: 5601
+      - path: /app/kibana
+        backend:
+          serviceName: kibana-logging
+          servicePort: 5601
+

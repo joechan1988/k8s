@@ -1,0 +1,25 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: influxdb
+  namespace: kube-system
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    traefik.frontend.rule.type: pathprefix
+spec:
+  rules:
+  - host: influxdb-admin.wocloud.guian.local
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: monitoring-influxdb
+          servicePort: 8083
+  - host: influxdb.wocloud.guian.local
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: monitoring-influxdb
+          servicePort: 8086
+

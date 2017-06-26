@@ -1,0 +1,77 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 1 (0x1)
+    Signature Algorithm: sha256WithRSAEncryption
+        Issuer: C=CN, ST=BeiJing, L=Default City, O=Default Company Ltd, CN=wocloud-guian-k8s-minion1
+        Validity
+            Not Before: May  2 02:27:12 2017 GMT
+            Not After : May  2 02:27:12 2018 GMT
+        Subject: C=CN, ST=BeiJing, O=Default Company Ltd, CN=wocloud-guian-k8s-minion1
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: (2048 bit)
+                Modulus:
+                    00:fb:4f:8f:c8:53:5c:aa:98:ec:09:5f:9e:e7:ef:
+                    f6:83:74:b6:64:ac:6a:82:07:c8:33:ad:9e:b5:b3:
+                    2a:be:24:c3:fc:59:0e:52:26:a8:67:1c:16:b5:0e:
+                    79:3e:e8:f6:4a:35:d5:ae:51:c7:84:eb:a9:5b:13:
+                    bc:14:67:82:1e:5c:52:a8:98:bf:ff:6f:a6:c4:f6:
+                    80:31:bf:cb:f4:14:33:fa:7f:bc:8f:82:d8:2e:1e:
+                    54:b6:f6:55:72:c0:23:b9:09:81:25:6c:97:d7:97:
+                    51:a7:2e:e8:d0:67:c8:be:53:3c:33:56:b5:00:f9:
+                    5a:a2:25:2f:32:bd:66:2b:b5:a5:d0:8d:a9:d8:82:
+                    9d:5e:31:92:d5:4c:34:c6:3f:e4:3e:4d:e6:05:60:
+                    f6:a7:0c:20:c3:93:de:2b:54:ba:c3:02:10:c8:85:
+                    49:a4:12:6e:b7:11:2d:0f:42:dd:0a:18:e6:97:ce:
+                    1e:79:6f:06:b0:6a:1d:8c:d7:a4:de:aa:d6:87:1e:
+                    7a:e5:f1:1f:45:c8:6c:79:84:2e:82:5a:b4:fa:3b:
+                    a4:f0:9d:d5:bd:89:6f:62:86:a9:f0:66:88:06:c2:
+                    60:6b:6a:26:2c:b0:b0:a7:03:c8:d1:9c:51:dc:ec:
+                    ae:0f:14:da:c4:35:1a:97:aa:8d:5f:eb:8f:5d:1f:
+                    0d:5f
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            X509v3 Key Usage: 
+                Digital Signature, Non Repudiation, Key Encipherment
+            X509v3 Subject Alternative Name: 
+                IP Address:172.31.0.74
+    Signature Algorithm: sha256WithRSAEncryption
+         33:36:ca:61:a7:7d:b5:9d:1b:9f:87:ce:de:85:79:77:4e:e9:
+         68:37:2a:e3:c8:76:93:83:5a:66:f8:41:4c:be:18:7f:fe:3e:
+         d6:cf:8d:d4:77:be:81:68:c4:64:20:de:62:37:34:08:0b:0c:
+         df:dd:a8:4c:57:e3:4b:ed:15:72:b3:27:c5:8a:1c:18:56:d1:
+         8c:64:19:4b:79:92:ea:45:7c:7a:5a:52:c6:3a:6d:ce:84:bb:
+         01:18:09:f7:74:37:8b:11:f6:85:e5:0f:a3:85:d5:e8:cd:f7:
+         71:3c:b2:21:ae:08:ca:92:9a:e7:da:1b:f9:74:4c:be:83:4f:
+         c3:f3:af:ac:f7:3c:7e:4c:90:f5:67:f4:9d:38:d2:63:ce:58:
+         07:e5:10:cc:2e:2d:a4:34:8d:b5:8c:d9:73:f7:4c:db:8f:6b:
+         3a:13:14:b4:a2:91:cd:04:53:d6:b3:60:c2:70:ed:16:0b:ef:
+         35:61:97:8b:42:73:63:51:f5:95:de:b3:87:4e:e9:c2:aa:6b:
+         bf:0a:a0:34:26:3f:06:70:3f:3f:44:87:e5:d3:c8:a1:46:0a:
+         cd:e2:01:83:88:c9:21:ee:1f:e2:d3:68:d4:9b:fe:b6:76:1a:
+         0a:d3:e5:b7:f0:77:cf:37:df:74:24:cc:6b:02:05:a4:54:4a:
+         48:bb:f6:9b
+-----BEGIN CERTIFICATE-----
+MIIDfzCCAmegAwIBAgIBATANBgkqhkiG9w0BAQsFADB4MQswCQYDVQQGEwJDTjEQ
+MA4GA1UECAwHQmVpSmluZzEVMBMGA1UEBwwMRGVmYXVsdCBDaXR5MRwwGgYDVQQK
+DBNEZWZhdWx0IENvbXBhbnkgTHRkMSIwIAYDVQQDDBl3b2Nsb3VkLWd1aWFuLWs4
+cy1taW5pb24xMB4XDTE3MDUwMjAyMjcxMloXDTE4MDUwMjAyMjcxMlowYTELMAkG
+A1UEBhMCQ04xEDAOBgNVBAgMB0JlaUppbmcxHDAaBgNVBAoME0RlZmF1bHQgQ29t
+cGFueSBMdGQxIjAgBgNVBAMMGXdvY2xvdWQtZ3VpYW4tazhzLW1pbmlvbjEwggEi
+MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQD7T4/IU1yqmOwJX57n7/aDdLZk
+rGqCB8gzrZ61syq+JMP8WQ5SJqhnHBa1Dnk+6PZKNdWuUceE66lbE7wUZ4IeXFKo
+mL//b6bE9oAxv8v0FDP6f7yPgtguHlS29lVywCO5CYElbJfXl1GnLujQZ8i+Uzwz
+VrUA+VqiJS8yvWYrtaXQjanYgp1eMZLVTDTGP+Q+TeYFYPanDCDDk94rVLrDAhDI
+hUmkEm63ES0PQt0KGOaXzh55bwawah2M16TeqtaHHnrl8R9FyGx5hC6CWrT6O6Tw
+ndW9iW9ihqnwZogGwmBraiYssLCnA8jRnFHc7K4PFNrENRqXqo1f649dHw1fAgMB
+AAGjKzApMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgXgMA8GA1UdEQQIMAaHBKwfAEow
+DQYJKoZIhvcNAQELBQADggEBADM2ymGnfbWdG5+Hzt6FeXdO6Wg3KuPIdpODWmb4
+QUy+GH/+PtbPjdR3voFoxGQg3mI3NAgLDN/dqExX40vtFXKzJ8WKHBhW0YxkGUt5
+kupFfHpaUsY6bc6EuwEYCfd0N4sR9oXlD6OF1ejN93E8siGuCMqSmufaG/l0TL6D
+T8Pzr6z3PH5MkPVn9J040mPOWAflEMwuLaQ0jbWM2XP3TNuPazoTFLSikc0EU9az
+YMJw7RYL7zVhl4tCc2NR9ZXes4dO6cKqa78KoDQmPwZwPz9Eh+XTyKFGCs3iAYOI
+ySHuH+LTaNSb/rZ2GgrT5bfwd88333QkzGsCBaRUSki79ps=
+-----END CERTIFICATE-----
