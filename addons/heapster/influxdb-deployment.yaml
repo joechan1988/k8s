@@ -17,7 +17,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: influxdb
-        image: cfkqch.myqnapcloud.com:6088/heapster-influxdb-amd64:v1.1.1
+        image: joechan1988.asuscomm.com:18080/library/heapster-influxdb-amd64:v1.3.3
         volumeMounts:
         - mountPath: /data
           name: influxdb-storage
