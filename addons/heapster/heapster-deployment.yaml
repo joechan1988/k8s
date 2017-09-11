@@ -18,7 +18,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: heapster
-        image: joechan1988.asuscomm.com:18080/library/heapster-amd64:v1.3.0
+        image: joechan1988.asuscomm.com:18080/library/heapster-amd64:v1.4.2
         imagePullPolicy: IfNotPresent
         command:
         - /heapster
