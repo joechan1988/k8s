@@ -18,7 +18,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: heapster
-        image: cfkqch.myqnapcloud.com:6088/heapster-amd64:v1.3.0
+        image: joechan1988.asuscomm.com:18080/heapster-amd64:v1.3.0
         imagePullPolicy: IfNotPresent
         command:
         - /heapster
