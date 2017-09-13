@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -x
 #Check binaries
 
 if [ ! -f "/usr/bin/kubectl" ]
