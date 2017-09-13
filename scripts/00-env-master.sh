@@ -1,4 +1,5 @@
 # SET ENV
+set -x
 
 export NODE_IP="192.168.1.184"
 export NODE_NAME=$NODE_IP
