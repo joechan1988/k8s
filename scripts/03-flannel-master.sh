@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -x
 #Check binaries
 
 if [[ ! -f "/usr/bin/dockerd-current" || ! -f "/usr/bin/flanneld" ]]

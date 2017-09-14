@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -x
 #Check binaries
 
 if [[ ! -f "/usr/bin/kube-proxy" || ! -f "/usr/bin/kubelet" ]]
@@ -121,7 +122,7 @@ cfssl gencert -ca=/etc/kubernetes/ssl/ca.pem \
   -profile=kubernetes  kube-proxy-csr.json | cfssljson -bare kube-proxy
 
 mv -f kube-proxy*.pem /etc/kubernetes/ssl/
-rm kube-proxy.csr  kube-proxy-csr.json
+rm -f kube-proxy.csr  kube-proxy-csr.json
 
 #-----------kube-config----------
 

@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -x
 #Check binaries
 
 if [[ ! -f "/usr/bin/kubectl" || ! -f "/usr/bin/kube-apiserver" || ! -f "/usr/bin/kube-scheduler" || ! -f "/usr/bin/kube-controller-manager" || ! -f "/usr/bin/kube-proxy" || ! -f "/usr/bin/kubelet" ]]

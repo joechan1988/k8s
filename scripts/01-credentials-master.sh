@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 #Check Binaries
 
 if [ ! -f "/usr/bin/cfssl" ]

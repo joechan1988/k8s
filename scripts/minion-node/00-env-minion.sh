@@ -1,11 +1,10 @@
 # SET ENV
+set -x
 
 export NODE_IP="192.168.1.182"
 export NODE_NAME=$NODE_IP
 export HOSTNAME=$NODE_NAME
-sysctl kernel.hostname=$NODE_NAME
-cat > /etc/hostname << EOF
-$NODE_IP
+echo $NODE_IP
 EOF
 
 export MASTER_IP="192.168.1.184"
