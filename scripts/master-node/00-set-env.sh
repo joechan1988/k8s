@@ -4,12 +4,27 @@ set -x
 export NODE_IP="192.168.1.184"
 export NODE_NAME=$NODE_IP
 export HOSTNAME=$NODE_NAME
-sysctl kernel.hostname=$NODE_NAME
+host=`hostname`
 cat > /etc/hostname << EOF
-echo $NODE_IP
+$NODE_IP $host
 EOF
+echo "Current Node IP is :" $NODE_IP
+read -t 30 -p "Continue to Deploying or Reconfigure? [yN]" judge
+if [[ judge != 'y' ]]
+then
+  exit 1
+fi
+
 
 export MASTER_IP="192.168.1.184"
+
+echo "Master IP is :"$MASTER_IP
+read -t 30 -p "Continue to Deploying or Reconfigure? [yN]" judge
+if [[ judge != 'y' ]]
+then
+  exit 1
+fi
+
 export BOOTSTRAP_TOKEN="41f7e4ba8b7be874fcff18bf5cf41a7c"
 export KUBE_APISERVER="https://${MASTER_IP}:6443"
 
