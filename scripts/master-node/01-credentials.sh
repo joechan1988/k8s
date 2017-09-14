@@ -4,26 +4,26 @@ set -x
 
 #Check Binaries
 
-if [ ! -f "/usr/bin/cfssl" ]
-then
-  wget https://pkg.cfssl.org/R1.2/cfssl_linux-amd64
-  chmod +x cfssl_linux-amd64
-  mv cfssl_linux-amd64 /usr/bin/cfssl
-fi
-
-if [ ! -f "/usr/bin/cfssljson" ]
-then
-  wget https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64
-  chmod +x cfssljson_linux-amd64
-  mv cfssljson_linux-amd64 /usr/bin/cfssljson
-fi
-
-if [ ! -f "/usr/bin/cfssl-certinfo" ]
-then
-  wget https://pkg.cfssl.org/R1.2/cfssl-certinfo_linux-amd64
-  chmod +x cfssl-certinfo_linux-amd64
-  mv cfssl-certinfo_linux-amd64 /usr/bin/cfssl-certinfo
-fi
+#if [ ! -f "/usr/bin/cfssl" ]
+#then
+#  wget https://pkg.cfssl.org/R1.2/cfssl_linux-amd64
+#  chmod +x cfssl_linux-amd64
+#  mv cfssl_linux-amd64 /usr/bin/cfssl
+#fi
+#
+#if [ ! -f "/usr/bin/cfssljson" ]
+#then
+#  wget https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64
+#  chmod +x cfssljson_linux-amd64
+#  mv cfssljson_linux-amd64 /usr/bin/cfssljson
+#fi
+#
+#if [ ! -f "/usr/bin/cfssl-certinfo" ]
+#then
+#  wget https://pkg.cfssl.org/R1.2/cfssl-certinfo_linux-amd64
+#  chmod +x cfssl-certinfo_linux-amd64
+#  mv cfssl-certinfo_linux-amd64 /usr/bin/cfssl-certinfo
+#fi
 
 #Generate CA files
 

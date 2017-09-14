@@ -14,12 +14,13 @@ fi
 
 #Check Env
 
-if [[ ! -n "$NODE_IP" || ! -n "$NODE_NAME" || ! -n "$ETCD_NODES" ]]
-then
-  echo "-------------"
-  echo "Set env first"
-  exit 2
-fi
+
+#if [[ ! -n "$NODE_IP" || ! -n "$NODE_NAME" || ! -n "$ETCD_NODES" ]]
+#then
+#  echo "-------------"
+#  echo "Set env first"
+#  exit 2
+#fi
 
 #Generate cert files
 
