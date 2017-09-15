@@ -12,13 +12,13 @@ fi
 
 
 #Check Env
-
-if [[ ! -n "$MASTER_IP" || ! -n "$BOOTSTRAP_TOKEN" || ! -n "$NODE_IP" || ! -n "$CLUSTER_DNS_SVC_IP" || ! -n "$CLUSTER_DNS_DOMAIN" || ! -n "$CLUSTER_KUBERNETES_SVC_IP" || ! -n "$KUBE_APISERVER" || ! -n "$SERVICE_CIDR" || ! -n "$NODE_PORT_RANGE" || ! -n "$ETCD_ENDPOINTS" ]]
-then
-  echo "-------------"
-  echo "Set env first"
-  exit 2
-fi
+#
+#if [[ ! -n "$MASTER_IP" || ! -n "$BOOTSTRAP_TOKEN" || ! -n "$NODE_IP" || ! -n "$CLUSTER_DNS_SVC_IP" || ! -n "$CLUSTER_DNS_DOMAIN" || ! -n "$CLUSTER_KUBERNETES_SVC_IP" || ! -n "$KUBE_APISERVER" || ! -n "$SERVICE_CIDR" || ! -n "$NODE_PORT_RANGE" || ! -n "$ETCD_ENDPOINTS" ]]
+#then
+#  echo "-------------"
+#  echo "Set env first"
+#  exit 2
+#fi
 
 
 #kubelet

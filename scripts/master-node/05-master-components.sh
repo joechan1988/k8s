@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x
+#set -x
 #Check binaries
 
 if [[ ! -f "/usr/bin/kubectl" || ! -f "/usr/bin/kube-apiserver" || ! -f "/usr/bin/kube-scheduler" || ! -f "/usr/bin/kube-controller-manager" || ! -f "/usr/bin/kube-proxy" || ! -f "/usr/bin/kubelet" ]]
@@ -29,6 +29,7 @@ cat > kubernetes-csr.json <<EOF
   "hosts": [
     "127.0.0.1",
     "${MASTER_IP}",
+    "${NODE_NAME}",
     "${CLUSTER_KUBERNETES_SVC_IP}",
     "kubernetes",
     "kubernetes.default",

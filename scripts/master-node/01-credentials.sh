@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x
+#set -x
 
 #Check Binaries
 
@@ -50,7 +50,6 @@ cat > /etc/kubernetes/ssl/ca-config.json <<EOF
 }
 EOF
 
-
 cat > /etc/kubernetes/ssl/ca-csr.json <<EOF
 {
   "CN": "kubernetes",
@@ -69,7 +68,6 @@ cat > /etc/kubernetes/ssl/ca-csr.json <<EOF
   ]
 }
 EOF
-
 
 cfssl gencert -initca /etc/kubernetes/ssl/ca-csr.json | cfssljson -bare ca
 mv ca* /etc/kubernetes/ssl

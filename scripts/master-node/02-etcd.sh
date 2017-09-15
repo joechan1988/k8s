@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x
+#set -x
 #Check binaries
 
 if [ ! -f "/usr/bin/etcd" ]
@@ -29,7 +29,8 @@ cat > etcd-csr.json <<EOF
   "CN": "etcd",
   "hosts": [
     "127.0.0.1",
-    "${NODE_IP}"
+    "${NODE_IP}",
+    "${NODE_NAME}"
   ],
   "key": {
     "algo": "rsa",

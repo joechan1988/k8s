@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x
+#set -x
 #Check binaries
 
 if [[ ! -f "/usr/bin/kube-proxy" || ! -f "/usr/bin/kubelet" ]]
@@ -184,6 +184,12 @@ systemctl enable kubelet
 systemctl start kubelet
 systemctl start kube-proxy
 
+#Creating CSR auto approving
+
+echo "---Creating CSR auto approving---"
+
+kubectl apply -f ../addons/csr-auto-approve.yml
+
 #Approve csr
 
 echo "------------------------------"
@@ -194,4 +200,5 @@ echo "\" kubectl certificate approve [csr_id_above]\""
 #Label master node
 
 kubectl label node $MASTER_IP node-role.kubernetes.io/master=""
+kubectl label node $MASTER_IP kubeadm.alpha.kubernetes.io/role=master
 

@@ -2,8 +2,8 @@
 
 #----Configurate ----
 
-source master-node/00-config.sh
-source master-node/00-set-env.sh
+source minion-node/00-config.sh
+source minion-node/00-set-env.sh
 
 #----Check Config-----
 
@@ -22,5 +22,5 @@ fi
 echo "------Start Deploying------"
 for i in {1..6}
 do
-source master-node/0$i-*.sh
+source minion-node/0$i-*.sh
 done
