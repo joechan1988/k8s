@@ -53,6 +53,7 @@ if args.host_ip:
 else:
     node_ip = rcp.get("configuration", "node_ip")
 
+master_ip = rcp.get("configuration", "master_ip")
 
 
 #     ----config dest folders----
@@ -96,8 +97,8 @@ def get_cert_from_master():
 
 
 #------ Functions: Deployment Actions ------
-def deploy_etcd():
-
+def config_etcd():
+    print('------Configurating Etcd------')
     prep_conf_dir("/var/lib/etcd",'')
     discovery = subprocess.check_output(["curl", "-s", "https://discovery.etcd.io/new?size=1"])
 
@@ -107,23 +108,27 @@ def deploy_etcd():
            node_name=node_name,
            discovery=discovery.replace('https','http'))
 
-def deploy_flannel():
-    print('------Deploying Flannel------')
+def config_flannel():
+    print('------Configurating Flannel------')
 
-def deploy_kubelet():
-    print('------Deploying kubelet------')
+    render(os.path.join(template_dir,"flanneld.service"),
+           os.path.join(systemd_dir, "flanneld.service"),
+           master_ip=master_ip)
 
-def deploy_apiserver():
-    print('------Deploying kube-apiserver ------')
+def config_kubelet():
+    print('------Configurating kubelet------')
 
-def deploy_controller_manager():
-    print('------Deploying kube-controller-manager ------')
+def config_apiserver():
+    print('------Configurating kube-apiserver ------')
 
-def deploy_scheduler():
-    print('------Deploying kube-scheduler ------')
+def config_controller_manager():
+    print('------Configurating kube-controller-manager ------')
 
-def deploy_addons():
-    print('------Deploying Addons:kube-dns ------')
+def config_scheduler():
+    print('------Configurating kube-scheduler ------')
+
+def config_addons():
+    print('------Configurating Addons:kube-dns ------')
 
 
 #------ Deployment Start ------
@@ -140,28 +145,35 @@ else:
 
 
     if role == 'master':
-        deploy_etcd()
-        deploy_flannel()
-        deploy_kubelet()
-        deploy_apiserver()
-        deploy_controller_manager()
-        deploy_scheduler()
-        deploy_addons()
+        config_etcd()
+        config_flannel()
+        config_kubelet()
+        config_apiserver()
+        config_controller_manager()
+        config_scheduler()
+        config_addons()
 
         subprocess.call(["systemctl", "daemon-reload"])
+
+        print("Starting Etcd...")
         subprocess.call(["systemctl", "start", "etcd"])
-        subprocess.call(["systemctl", "restart", "docker"])
+        print("Starting Etcd...")
         subprocess.call(["systemctl", "start", "flanneld"])
+        print("Starting Docker...")
+        subprocess.call(["systemctl", "restart", "docker"])
+        print("Starting kubelet...")
         subprocess.call(["systemctl", "start", "kubelet"])
+        print("Starting kube-apiserver...")
         subprocess.call(["systemctl", "start", "kube-apiserver"])
+        print("Starting kube-controller-manager...")
         subprocess.call(["systemctl", "start", "kube-controller-manager"])
+        print("Starting kube-scheduler...")
         subprocess.call(["systemctl", "start", "kube-scheduler"])
         # subprocess.call(["systemctl", "start", ""])
 
     if role == 'minion':
         get_cert_from_master()
 
-    # ------ Start Service ------
 
 
 
