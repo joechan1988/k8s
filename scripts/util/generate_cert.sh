@@ -49,5 +49,17 @@ EOF
 cfssl gencert -initca /etc/kubernetes/ssl/ca-csr.json | cfssljson -bare ca
 mv ca* /etc/kubernetes/ssl
 
+#Generate etcd cert files
+
+mkdir -p /etc/etcd/ssl
+
+cfssl gencert -ca=/etc/kubernetes/ssl/ca.pem \
+  -ca-key=/etc/kubernetes/ssl/ca-key.pem \
+  -config=/etc/kubernetes/ssl/ca-config.json \
+  -profile=kubernetes /etc/etcd/ssl/etcd-csr.json | cfssljson -bare etcd
+
+mv -f etcd*.pem /etc/etcd/ssl
+rm -f etcd.csr
+
 
 
