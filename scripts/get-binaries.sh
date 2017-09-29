@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+version_tag=$1
 
 if [[ ! -f "/usr/bin/wget" ]]
 then
@@ -35,13 +36,13 @@ if [[ ! -f "/usr/bin/kubectl" \
       ||  ! -f "/usr/bin/etcd" \
        ]]
 then
- wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/v1.7.4/server/bin/kubectl
- wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/v1.7.4/server/bin/kube-apiserver
- wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/v1.7.4/server/bin/kube-scheduler
- wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/v1.7.4/server/bin/kube-controller-manager
- wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/v1.7.4/server/bin/kube-proxy
- wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/v1.7.4/server/bin/kubelet
- wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/v1.7.4/server/bin/kubeadm
+ wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/${version_tag}/server/bin/kubectl
+ wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/${version_tag}/server/bin/kube-apiserver
+ wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/${version_tag}/server/bin/kube-scheduler
+ wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/${version_tag}/server/bin/kube-controller-manager
+ wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/${version_tag}/server/bin/kube-proxy
+ wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/${version_tag}/server/bin/kubelet
+ wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/${version_tag}/server/bin/kubeadm
  wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/flannel/flanneld
  wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/flannel/mk-docker-opts.sh
  wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/etcd/etcd

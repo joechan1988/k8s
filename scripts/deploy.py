@@ -34,7 +34,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--conf', dest='cfgfile', default=base_dir + '/k8s.cfg', type=str,
                     help="the path of Kubernetes configuration file")
 parser.add_argument('--host-ip',dest='host_ip',type=str,help="Host IP Address")
-parser.add_argument('--role',dest='node_role',type=str,default='',require=True,help="Node Role Type:master/minion")
+parser.add_argument('--role',dest='node_role',type=str,default='',required=True,help="Node Role Type:master/minion")
 parser.add_argument('--test',dest='test_unit',type=str,default='')
 args = parser.parse_args()
 
@@ -47,6 +47,8 @@ rcp = ConfigParser.RawConfigParser()
 rcp.readfp(conf)
 
 # --- vars ---
+k8s_version = rcp.get("configuration", "k8s_version")
+
 node_name = socket.gethostname()
 if args.host_ip:
     node_ip= args.host_ip
@@ -89,7 +91,7 @@ def render(src, dest, **kw):
     print("Generated configuration file: %s" % dest)
 
 def get_binaries():
-    subprocess.call(["bash", "-c", "./get-binaries.sh"])
+    subprocess.call([os.path.join(base_dir,'get-binaries.sh'),k8s_version])
 
 def generate_cert():
 
@@ -159,6 +161,8 @@ role = args.node_role
 
 if args.test_unit:
     print('------Script Testing------')
+    print('11111')
+    get_binaries()
 else:
     get_binaries()
     generate_cert()
