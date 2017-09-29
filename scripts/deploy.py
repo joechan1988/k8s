@@ -54,7 +54,15 @@ else:
     node_ip = rcp.get("configuration", "node_ip")
 
 master_ip = rcp.get("configuration", "master_ip")
+kube_apiserver = "https://"+master_ip+":6443"
+cluster_kubernetes_svc_ip = rcp.get("configuration", "cluster_kubernetes_svc_ip")
+cluster_dns_domain = rcp.get("configuration", "cluster_dns_domain")
+cluster_dns_svc_ip =rcp.get("configuration", "cluster_dns_svc_ip")
+node_port_range =rcp.get("configuration", "node_port_range")
+cluster_cidr =rcp.get("configuration", "cluster_cidr")
+service_cidr =rcp.get("configuration", "service_cidr")
 
+bootstrap_token=  rcp.get("configuration", "bootstrap_token")
 
 #     ----config dest folders----
 
@@ -85,12 +93,26 @@ def get_binaries():
 
 def generate_cert():
 
+    prep_conf_dir(etcd_ssl_dir,'')
+    prep_conf_dir(k8s_ssl_dir,'')
     render(os.path.join(template_dir,"etcd-csr.json"),
            os.path.join(etcd_ssl_dir,"etcd-csr.json"),
            node_name=node_name,
            node_ip=node_ip)
+    render(os.path.join(template_dir,"kubernetes-csr.json"),
+           os.path.join(k8s_ssl_dir,"kubernetes-csr.json"),
+           node_name=node_name,
+           node_ip=node_ip,
+           master_ip=master_ip,
+           cluster_kubernetes_svc_ip=cluster_kubernetes_svc_ip)
+    render(os.path.join(template_dir,"token.csv"),
+           os.path.join("/etc/kubernetes/","token.csv"),
+           bootstrap_token=bootstrap_token)
 
     subprocess.call(["bash","-c", os.path.join(base_dir,"util","generate_cert.sh")])
+
+def generate_kubeconfig():
+    subprocess.call(["bash", "-c", os.path.join(base_dir, "util", "generate_kubeconfig.sh",kube_apiserver,bootstrap_token)])
 
 def get_cert_from_master():
     pass
@@ -138,8 +160,6 @@ role = args.node_role
 if args.test_unit:
     print('------Script Testing------')
 else:
-    prep_conf_dir(etcd_ssl_dir,'')
-    prep_conf_dir(k8s_ssl_dir,'')
     get_binaries()
     generate_cert()
 

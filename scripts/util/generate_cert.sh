@@ -51,8 +51,6 @@ mv ca* /etc/kubernetes/ssl
 
 #Generate etcd cert files
 
-mkdir -p /etc/etcd/ssl
-
 cfssl gencert -ca=/etc/kubernetes/ssl/ca.pem \
   -ca-key=/etc/kubernetes/ssl/ca-key.pem \
   -config=/etc/kubernetes/ssl/ca-config.json \
@@ -61,5 +59,31 @@ cfssl gencert -ca=/etc/kubernetes/ssl/ca.pem \
 mv -f etcd*.pem /etc/etcd/ssl
 rm -f etcd.csr
 
+#Generate k8s cert files
 
+cfssl gencert -ca=/etc/kubernetes/ssl/ca.pem \
+  -ca-key=/etc/kubernetes/ssl/ca-key.pem \
+  -config=/etc/kubernetes/ssl/ca-config.json \
+  -profile=kubernetes /etc/kubernetes/ssl/kubernetes-csr.json | cfssljson -bare kubernetes
+
+mv -f kubernetes*.pem /etc/kubernetes/ssl/
+rm -f kubernetes.csr
+
+cfssl gencert -ca=/etc/kubernetes/ssl/ca.pem \
+  -ca-key=/etc/kubernetes/ssl/ca-key.pem \
+  -config=/etc/kubernetes/ssl/ca-config.json \
+  -profile=kubernetes /etc/kubernetes/ssl/admin-csr.json | cfssljson -bare admin
+
+mv -f admin*.pem /etc/kubernetes/ssl/
+rm -f admin.csr
+
+#Generate kube-proxy cert files
+
+cfssl gencert -ca=/etc/kubernetes/ssl/ca.pem \
+  -ca-key=/etc/kubernetes/ssl/ca-key.pem \
+  -config=/etc/kubernetes/ssl/ca-config.json \
+  -profile=kubernetes  /etc/kubernetes/ssl/kube-proxy-csr.json | cfssljson -bare kube-proxy
+
+mv -f kube-proxy*.pem /etc/kubernetes/ssl/
+rm -f kube-proxy.csr
 
