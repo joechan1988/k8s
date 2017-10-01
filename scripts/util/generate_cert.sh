@@ -2,6 +2,10 @@
 
 #set -x
 
+#Clearing
+
+#rm -rf /etc/kubernetes/*
+
 #Generate CA files
 
 mkdir -p /etc/kubernetes/ssl
@@ -47,7 +51,7 @@ cat > /etc/kubernetes/ssl/ca-csr.json <<EOF
 EOF
 
 cfssl gencert -initca /etc/kubernetes/ssl/ca-csr.json | cfssljson -bare ca
-mv ca* /etc/kubernetes/ssl
+mv -f ca* /etc/kubernetes/ssl
 
 #Generate etcd cert files
 
@@ -76,6 +80,37 @@ cfssl gencert -ca=/etc/kubernetes/ssl/ca.pem \
 
 mv -f admin*.pem /etc/kubernetes/ssl/
 rm -f admin.csr
+
+#Generate flannel cert files
+
+cat > flanneld-csr.json <<EOF
+{
+  "CN": "flanneld",
+  "hosts": [],
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "CN",
+      "ST": "BeiJing",
+      "L": "BeiJing",
+      "O": "k8s",
+      "OU": "System"
+    }
+  ]
+}
+EOF
+
+cfssl gencert -ca=/etc/kubernetes/ssl/ca.pem \
+  -ca-key=/etc/kubernetes/ssl/ca-key.pem \
+  -config=/etc/kubernetes/ssl/ca-config.json \
+  -profile=kubernetes flanneld-csr.json | cfssljson -bare flanneld
+
+mkdir -p /etc/flanneld/ssl
+mv -f flanneld*.pem /etc/flanneld/ssl
+rm -f flanneld.csr  flanneld-csr.json
 
 #Generate kube-proxy cert files
 

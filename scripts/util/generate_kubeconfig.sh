@@ -18,10 +18,12 @@ kubectl config set-context kubernetes \
 
 kubectl config use-context kubernetes
 
+cp -f /root/.kube/config /etc/kubernetes/admin.kubeconfig
+
 #------kubelet kubeconfig------
 
 
-kubectl create clusterrolebinding kubelet-bootstrap --clusterrole=system:node-bootstrapper --user=kubelet-bootstrap
+#kubectl create clusterrolebinding kubelet-bootstrap --clusterrole=system:node-bootstrapper --user=kubelet-bootstrap
 
 kubectl config set-cluster kubernetes \
   --certificate-authority=/etc/kubernetes/ssl/ca.pem \

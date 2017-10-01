@@ -54,7 +54,7 @@ ExecStart=/usr/bin/dockerd-current \
           \$DOCKER_NETWORK_OPTIONS \
           \$ADD_REGISTRY \
           \$BLOCK_REGISTRY \
-          \$INSECURE_REGISTRY
+          \$INSECURE_REGISTRY \
 ExecReload=/bin/kill -s HUP $MAINPID
 LimitNOFILE=1048576
 LimitNPROC=1048576

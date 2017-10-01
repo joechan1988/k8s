@@ -7,20 +7,20 @@ Requires=docker.service
 [Service]
 WorkingDirectory=/var/lib/kubelet
 ExecStart=/usr/bin/kubelet \
-  --address=${NODE_IP} \
-  --hostname-override=${NODE_IP} \
+  --address=$node_ip \
+  --hostname-override=$node_ip \
   --pod-infra-container-image=registry.access.redhat.com/rhel7/pod-infrastructure:latest \
   --experimental-bootstrap-kubeconfig=/etc/kubernetes/bootstrap.kubeconfig \
-  --kubeconfig=/etc/kubernetes/kubelet.kubeconfig \
-  --require-kubeconfig \
+  --kubeconfig=/etc/kubernetes/admin.kubeconfig \
   --cert-dir=/etc/kubernetes/ssl \
-  --cluster_dns=${CLUSTER_DNS_SVC_IP} \
-  --cluster_domain=${CLUSTER_DNS_DOMAIN} \
+  --cluster_dns=$cluster_dns_svc_ip \
+  --cluster_domain=$cluster_dns_domain \
   --hairpin-mode promiscuous-bridge \
   --allow-privileged=true \
   --serialize-image-pulls=false \
   --logtostderr=true \
   --cgroup-driver=systemd \
+  --fail-swap-on=false \
   --v=2
 
 ExecStopPost=/sbin/iptables -A INPUT -s 10.0.0.0/8 -p tcp --dport 4194 -j ACCEPT

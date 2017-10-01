@@ -5,7 +5,7 @@ After=network.target
 
 [Service]
 ExecStart=/usr/bin/kube-apiserver \
-  --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota \\
+  --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota \
   --advertise-address=$master_ip \
   --bind-address=$master_ip  \
   --insecure-bind-address=$master_ip \
@@ -23,7 +23,7 @@ ExecStart=/usr/bin/kube-apiserver \
   --etcd-cafile=/etc/kubernetes/ssl/ca.pem \
   --etcd-certfile=/etc/kubernetes/ssl/kubernetes.pem \
   --etcd-keyfile=/etc/kubernetes/ssl/kubernetes-key.pem \
-  --etcd-servers=$etcd_endpoints \
+  --etcd-servers=https://$master_ip:2379 \
   --enable-swagger-ui=true \
   --allow-privileged=true \
   --apiserver-count=3 \

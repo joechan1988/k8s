@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 version_tag=$1
+remove_all=$2
+
 
 if [[ ! -f "/usr/bin/wget" ]]
 then
@@ -25,32 +27,49 @@ fi
 
 
 #------kubernetes binaries ------
-if [[ ! -f "/usr/bin/kubectl" \
-      ||  ! -f "/usr/bin/kube-apiserver"  \
-      ||  ! -f "/usr/bin/kube-scheduler"  \
-      ||  ! -f "/usr/bin/kube-controller-manager" \
-      ||  ! -f "/usr/bin/kube-proxy"   \
-      ||  ! -f "/usr/bin/kubelet" \
-      ||  ! -f "/usr/bin/kubeadm"  \
-      ||  ! -f "/usr/bin/flanneld" \
-      ||  ! -f "/usr/bin/etcd" \
-       ]]
+
+k8s_binaries=(kubectl \
+            kube-apiserver \
+            kube-scheduler \
+            kube-controller-manager\
+            kube-proxy\
+            kubelet \
+            kubeadm \
+            )
+
+  #---remove previous binaries ----
+if [ ${remove_all} = 'yes' ]
 then
- wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/${version_tag}/server/bin/kubectl
- wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/${version_tag}/server/bin/kube-apiserver
- wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/${version_tag}/server/bin/kube-scheduler
- wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/${version_tag}/server/bin/kube-controller-manager
- wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/${version_tag}/server/bin/kube-proxy
- wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/${version_tag}/server/bin/kubelet
- wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/${version_tag}/server/bin/kubeadm
+  for bin in ${k8s_binaries[@]}
+  do
+    rm -f /usr/bin/${bin}
+  done
+fi
+  #-----------------
+
+for bin in ${k8s_binaries[@]}
+do
+  if [[ ! -f "/usr/bin/${bin}" ]]
+  then
+    wget -c -P /usr/bin/ \
+    ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/${version_tag}/server/bin/${bin}
+  fi
+done
+
+
+#------Flannel&&etcd binaries ------
+
+if [[ ! -f "/usr/bin/flanneld" ||  ! -f "/usr/bin/etcd" ]]
+then
  wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/flannel/flanneld
  wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/flannel/mk-docker-opts.sh
  wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/etcd/etcd
  wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/etcd/etcdctl
-
- chmod +x /usr/bin/kube*
- chmod +x /usr/bin/flanneld
- chmod +x /usr/bin/etcd*
-
 fi
+
+chmod +x /usr/bin/kube*
+chmod +x /usr/bin/flanneld
+chmod +x /usr/bin/mk-docker-opts.sh
+chmod +x /usr/bin/etcd*
+
 
