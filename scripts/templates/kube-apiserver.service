@@ -6,9 +6,9 @@ After=network.target
 [Service]
 ExecStart=/usr/bin/kube-apiserver \
   --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota \
-  --advertise-address=$master_ip \
-  --bind-address=$master_ip  \
-  --insecure-bind-address=$master_ip \
+  --advertise-address=$node_ip \
+  --bind-address=$node_ip  \
+  --insecure-bind-address=$node_ip \
   --authorization-mode=RBAC \
   --runtime-config=rbac.authorization.k8s.io/v1alpha1 \
   --kubelet-https=true \

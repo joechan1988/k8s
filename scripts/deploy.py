@@ -5,12 +5,16 @@
 from __future__ import print_function, unicode_literals  # We require Python 2.6 or later
 from string import Template
 import socket
+import json
 import os
 import sys
 import argparse
 import subprocess
 import shutil
 import paramiko
+from templates import json_schema
+from util import cert_tool
+from scp import SCPClient
 from io import open
 
 if sys.version_info[:3][0] == 2:
@@ -21,6 +25,7 @@ if sys.version_info[:3][0] == 3:
     import configparser as ConfigParser
     import io as StringIO
 
+
 #------Global Vars-----
 
 base_dir = os.path.dirname(__file__)
@@ -28,11 +33,13 @@ base_dir = os.path.dirname(__file__)
 
 parser = argparse.ArgumentParser()
 
-master_service_list = ['etcd','kube-apiserver',
+master_service_list = ['kube-apiserver',
                 'kube-controller-manager','kube-scheduler']
 node_service_list = ['flanneld','docker','kubelet','kube-proxy']
 success_list =[]
 failed_list = []
+
+
 
 # --- args ---
 parser.add_argument('--conf', dest='cfgfile', default=base_dir + '/k8s.cfg', type=str,
@@ -62,7 +69,8 @@ else:
     node_ip = rcp.get("configuration", "node_ip")
 
 master_ip = rcp.get("configuration", "master_ip")
-kube_apiserver = "https://"+master_ip+":6443"
+kube_apiserver = "https://"+node_ip+":6443"
+haproxy_vip = rcp.get("configuration", "haproxy_vip")
 cluster_kubernetes_svc_ip = rcp.get("configuration", "cluster_kubernetes_svc_ip")
 cluster_dns_domain = rcp.get("configuration", "cluster_dns_domain")
 cluster_dns_svc_ip =rcp.get("configuration", "cluster_dns_svc_ip")
@@ -74,6 +82,11 @@ etcd_endpoints="https://"+master_ip+":2379"
 
 flannel_etcd_prefix = "/kubernetes/network"
 bootstrap_token=  rcp.get("configuration", "bootstrap_token")
+
+master_ssh_user = rcp.get("configuration", "master_ssh_user")
+master_ssh_password = rcp.get("configuration", "master_ssh_password")
+
+update_binaries = rcp.get("configuration", "update_binaries")
 
 #     ----config dest folders----
 
@@ -111,36 +124,134 @@ def render(src, dest, **kw):
 
 def get_binaries():
     # subprocess.call([os.path.join(base_dir,'get-binaries.sh'),k8s_version])
-    shell_cmd = [os.path.join(base_dir,'get-binaries.sh'),k8s_version]
+    shell_cmd = [os.path.join(base_dir,'util','get-binaries.sh'),k8s_version,update_binaries]
     shell_exec(shell_cmd)
 
 def generate_cert():
 
-    prep_conf_dir(etcd_ssl_dir,'',clear=True)
-    prep_conf_dir('/etc/kubernetes','',clear=True)
-    prep_conf_dir(k8s_ssl_dir,'',clear=True)
+    #---Get Json Schema---
+    ca_csr_json = json_schema.k8s_ca_csr
+    ca_config_json = json_schema.k8s_ca_config
+    k8s_csr_json = json_schema.k8s_csr
+    etcd_csr_json = json_schema.etcd_csr
+    admin_csr_json = json_schema.k8s_admin_csr
+    proxy_csr_json = json_schema.kube_proxy_csr
+    flanneld_csr_json =json_schema.flanneld_csr
 
-    render(os.path.join(template_dir,"etcd-csr.json"),
-           os.path.join(etcd_ssl_dir,"etcd-csr.json"),
-           node_name=node_name,
-           node_ip=node_ip)
-    render(os.path.join(template_dir,"kubernetes-csr.json"),
-           os.path.join(k8s_ssl_dir,"kubernetes-csr.json"),
-           node_name=node_name,
-           node_ip=node_ip,
-           master_ip=master_ip,
-           cluster_kubernetes_svc_ip=cluster_kubernetes_svc_ip)
+    #---Customize---
+    k8s_cert_hosts = [
+        "127.0.0.1",
+        "kubernetes",
+        "kubernetes.default",
+        "kubernetes.default.svc",
+        "kubernetes.default.svc.cluster",
+        "kubernetes.default.svc.cluster.local"]
+
+    etcd_cert_hosts = [
+        "127.0.0.1"
+    ]
+
+
+    #-------
+
+    haproxy_vip_arr = haproxy_vip.split(',')
+
+    k8s_cert_hosts.append(node_ip)
+    k8s_cert_hosts.append(node_name)
+    k8s_cert_hosts.append(cluster_kubernetes_svc_ip)
+    for item in haproxy_vip_arr:
+        k8s_cert_hosts.append(item)
+
+    etcd_cert_hosts.append(node_ip)
+    etcd_cert_hosts.append(node_name)
+
+    k8s_csr_json["hosts"] = k8s_cert_hosts
+    etcd_csr_json["hosts"] = etcd_cert_hosts
+
+    # render(os.path.join(template_dir,"etcd-csr.json"),
+    #        os.path.join(etcd_ssl_dir,"etcd-csr.json"),
+    #        node_name=node_name,
+    #        node_ip=node_ip)
+    # render(os.path.join(template_dir,"kubernetes-csr.json"),
+    #        os.path.join(k8s_ssl_dir,"kubernetes-csr.json"),
+    #        node_name=node_name,
+    #        node_ip=node_ip,
+    #        master_ip=master_ip,
+    #        cluster_kubernetes_svc_ip=cluster_kubernetes_svc_ip)
+
+    # render(os.path.join(template_dir,"kubernetes-csr.json"),
+    #        os.path.join(k8s_ssl_dir,"kubernetes-csr.json"),
+    #        hosts=k8s_cert_hosts_utf8)
+
+    # ------Prepare Directory ------
+    prep_conf_dir(etcd_ssl_dir, '', clear=True)
+    prep_conf_dir('/etc/kubernetes', '', clear=True)
+    prep_conf_dir(k8s_ssl_dir, '', clear=True)
+    prep_conf_dir('/etc/flanneld/ssl/','',clear=True)
+
+    #---Generate Cert Files---
+    k8s_csr_json_file=open('/etc/kubernetes/ssl/kubernetes-csr.json','wb')
+    k8s_csr_json_file.write(json.dumps(k8s_csr_json))
+    k8s_csr_json_file.close()
+
+    etcd_csr_json_file = open("/etc/etcd/ssl/etcd-csr.json",'wb')
+    etcd_csr_json_file.write(json.dumps(etcd_csr_json))
+    etcd_csr_json_file.close()
+
+    ca_config_json_file = open(k8s_ssl_dir+'ca-config.json','wb')
+    ca_config_json_file.write(json.dumps(ca_config_json))
+    ca_config_json_file.close()
+
+    ca_csr_json_file = open(k8s_ssl_dir+'ca-csr.json','wb')
+    ca_csr_json_file.write(json.dumps(ca_csr_json))
+    ca_csr_json_file.close()
+
+    admin_csr_json_file = open(k8s_ssl_dir+'admin-csr.json','wb')
+    admin_csr_json_file.write(json.dumps(admin_csr_json))
+    admin_csr_json_file.close()
+
+    proxy_csr_json_file = open(k8s_ssl_dir+'kube-proxy-csr.json','wb')
+    proxy_csr_json_file.write(json.dumps(proxy_csr_json))
+    proxy_csr_json_file.close()
+
+    flanneld_csr_json_file = open('/etc/flanneld/ssl/flanneld-csr.json','wb')
+    flanneld_csr_json_file.write(json.dumps(flanneld_csr_json))
+    flanneld_csr_json_file.close()
+
     render(os.path.join(template_dir,"token.csv"),
            os.path.join("/etc/kubernetes/","token.csv"),
            bootstrap_token=bootstrap_token)
-    render(os.path.join(template_dir, "admin-csr.json"),
-           os.path.join(k8s_ssl_dir, "admin-csr.json"))
-    render(os.path.join(template_dir, "kube-proxy-csr.json"),
-           os.path.join(k8s_ssl_dir, "kube-proxy-csr.json"))
+    # render(os.path.join(template_dir, "admin-csr.json"),
+    #        os.path.join(k8s_ssl_dir, "admin-csr.json"))
+    # render(os.path.join(template_dir, "kube-proxy-csr.json"),
+    #        os.path.join(k8s_ssl_dir, "kube-proxy-csr.json"))
 
-    shell_cmd = [os.path.join(base_dir,"util","generate_cert.sh")]
-    shell_exec(shell_cmd)
-    # subprocess.call(os.path.join(base_dir,"util","generate_cert.sh"))
+    # shell_cmd = [os.path.join(base_dir,"util","generate_cert.sh")]
+    # shell_exec(shell_cmd)
+
+
+    cert_tool.gen_ca_cert(ca_dir=k8s_ssl_dir)
+    cert_tool.gen_cert_files(ca_dir=k8s_ssl_dir,profile='kubernetes',\
+                             csr_file=etcd_ssl_dir+'etcd-csr.json',\
+                             cert_name='etcd',\
+                             dest_dir=etcd_ssl_dir)
+    cert_tool.gen_cert_files(ca_dir=k8s_ssl_dir,profile='kubernetes',\
+                             csr_file='/etc/flanneld/ssl/flanneld-csr.json',\
+                             cert_name='flanneld',\
+                             dest_dir='/etc/flanneld/ssl/')
+    cert_tool.gen_cert_files(ca_dir=k8s_ssl_dir, profile='kubernetes', \
+                             csr_file=k8s_ssl_dir + 'kubernetes-csr.json', \
+                             cert_name='kubernetes', \
+                             dest_dir=k8s_ssl_dir)
+    cert_tool.gen_cert_files(ca_dir=k8s_ssl_dir, profile='kubernetes', \
+                             csr_file=k8s_ssl_dir + 'admin-csr.json', \
+                             cert_name='admin', \
+                             dest_dir=k8s_ssl_dir)
+    cert_tool.gen_cert_files(ca_dir=k8s_ssl_dir, profile='kubernetes', \
+                             csr_file=k8s_ssl_dir + 'kube-proxy-csr.json', \
+                             cert_name='kube-proxy', \
+                             dest_dir=k8s_ssl_dir)
+
 
 def generate_kubeconfig():
     # subprocess.call([os.path.join(base_dir, "util", "generate_kubeconfig.sh"), \
@@ -156,10 +267,11 @@ def get_cert_from_master():
 
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(master_ip,22,'root','123456')
-    sftp = paramiko.SFTPClient.from_transport(ssh.get_transport())
-    # sftp = ssh.open_sftp()
-    sftp.get('/etc/kubernetes/*','/etc/kubernetes')
+    ssh.connect(master_ip,22,master_ssh_user,master_ssh_password)
+    scpclient = SCPClient(ssh.get_transport(),socket_timeout=15.0)
+    scpclient.get('/etc/kubernetes/','/etc',recursive=True)
+    scpclient.get('/etc/flanneld/ssl','/etc/flanneld',recursive=True)
+    # sftp = paramiko.SFTPClient.from_transport(ssh.get_transport())
 
 
 
@@ -205,6 +317,7 @@ def config_apiserver():
     render(os.path.join(template_dir,"kube-apiserver.service"),
            os.path.join(systemd_dir, "kube-apiserver.service"),
            master_ip=master_ip,
+           node_ip=node_ip,
            service_cidr=service_cidr,
            node_port_range=node_port_range,
            )
@@ -214,7 +327,7 @@ def config_controller_manager():
 
     render(os.path.join(template_dir,"kube-controller-manager.service"),
            os.path.join(systemd_dir, "kube-controller-manager.service"),
-           master_ip=master_ip,
+           node_ip=node_ip,
            service_cidr=service_cidr,
            cluster_cidr=cluster_cidr
            )
@@ -223,7 +336,7 @@ def config_scheduler():
     print('------Configurating kube-scheduler ------')
     render(os.path.join(template_dir,"kube-scheduler.service"),
            os.path.join(systemd_dir, "kube-scheduler.service"),
-           master_ip=master_ip,
+           node_ip=node_ip,
            service_cidr=service_cidr,
            cluster_cidr=cluster_cidr
            )
@@ -254,7 +367,7 @@ def label_master_node():
 
     # subprocess.call(["kubectl","label","node",node_ip,"node-role.kubernetes.io/master="])
     # subprocess.call(["kubectl","label","node",node_ip,"kubeadm.alpha.kubernetes.io/role=master"])
-    shell_cmd = "kubectl label node "+node_ip+" node-role.kubernetes.io/master="
+    shell_cmd = "kubectl --kubeconfig=/etc/kubernetes/admin.kubeconfig label node "+node_ip+" node-role.kubernetes.io/master="
     shell_exec(shell_cmd,shell=True)
 
 def initiate_flanneld():
@@ -279,12 +392,10 @@ role = args.node_role
 
 if args.test_unit:
     print('------Script Testing------')
-    prep_conf_dir('/var/lib/kubelet','',clear=True)
+    generate_cert()
     sys.exit(0)
 else:
     get_binaries()
-
-
 
     if role == 'master':
         generate_cert()
@@ -298,31 +409,28 @@ else:
         config_proxy()
         config_kubelet()
 
-        subprocess.call(["systemctl", "daemon-reload"])
-        #
-        # print("Starting Etcd...")
-        # subprocess.call(["systemctl", "start", "etcd"])
-        # print("Starting Flannel...")
-        # subprocess.call(["systemctl", "start", "flanneld"])
-        # print("Starting Docker...")
-        # subprocess.call(["systemctl", "restart", "docker"])
-        # print("Starting kube-apiserver...")
-        # subprocess.call(["systemctl", "start", "kube-apiserver"])
-        # print("Starting kube-controller-manager...")
-        # subprocess.call(["systemctl", "start", "kube-controller-manager"])
-        # print("Starting kube-scheduler...")
-        # subprocess.call(["systemctl", "start", "kube-scheduler"])
-        # print("Starting kubelet...")
-        # subprocess.call(["systemctl", "start", "kubelet"])
-        # # subprocess.call(["systemctl", "start", ""])
-
     if role == 'minion':
         get_cert_from_master()
+        config_flannel()
+        config_proxy()
+        config_kubelet()
+
+    if role == 'master-backup':
+        get_cert_from_master()
+        config_flannel()
+        config_apiserver()
+        config_controller_manager()
+        config_scheduler()
+        config_proxy()
+        config_kubelet()
+
+    subprocess.call(["systemctl", "daemon-reload"])
 
 #------Start Service -------
 
 if args.node_role == 'master':
 
+    start_service('etcd')
     #---Start Master Components---
     for service in master_service_list:
         start_service(service)
@@ -346,22 +454,27 @@ if args.node_role == 'master':
                 label_master_node()
                 break
 
-else:
+elif args.node_role == 'minion':
     for service in node_service_list:
         start_service(service)
 
     print('Successfully Start Service: %s' % success_list)
     print('Failed to Start: %s' % failed_list)
 
+elif args.node_role == 'master-backup':
 
+    for service in master_service_list:
+        start_service(service)
+    for service in node_service_list:
+        start_service(service)
+    print('Successfully Start Service: %s' % success_list)
+    print('Failed to Start: %s' % failed_list)
 
-
-
-
-
-
-
-
-
-
-
+    if 'kube-apiserver' in success_list \
+        and 'kube-controller-manager' in success_list \
+        and 'kubelet' in success_list:
+        while True:
+            check_node = subprocess.check_output(["kubectl","--kubeconfig=/etc/kubernetes/admin.kubeconfig","get","node"])
+            if node_ip in check_node:
+                label_master_node()
+                break

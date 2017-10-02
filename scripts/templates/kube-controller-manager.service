@@ -5,7 +5,7 @@ Documentation=https://github.com/GoogleCloudPlatform/kubernetes
 [Service]
 ExecStart=/usr/bin/kube-controller-manager \
   --address=127.0.0.1 \
-  --master=http://$master_ip:8080 \
+  --master=http://$node_ip:8080 \
   --allocate-node-cidrs=true \
   --service-cluster-ip-range=$service_cidr \
   --cluster-cidr=$cluster_cidr \

@@ -1,17 +1,6 @@
 {
   "CN": "kubernetes",
-  "hosts": [
-    "127.0.0.1",
-    "$master_ip",
-    "$node_ip",
-    "$node_name",
-    "$cluster_kubernetes_svc_ip",
-    "kubernetes",
-    "kubernetes.default",
-    "kubernetes.default.svc",
-    "kubernetes.default.svc.cluster",
-    "kubernetes.default.svc.cluster.local"
-  ],
+  "hosts": $hosts,
   "key": {
     "algo": "rsa",
     "size": 2048

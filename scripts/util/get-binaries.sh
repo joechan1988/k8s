@@ -14,7 +14,7 @@ fi
 if [[ ! -f "/usr/bin/cfssl" || \
  ! -f "/usr/bin/cfssljson" || ! -f "/usr/bin/cfssl-certinfo" ]]
 then
-  wget -c -O /usr/bin/cfssl https://pkg.cfssl.org/R1.2/cfssl_linux-amd64 -O cfssl -P /usr/bin/
+  wget -c -O /usr/bin/cfssl https://pkg.cfssl.org/R1.2/cfssl_linux-amd64
   wget -c -O /usr/bin/cfssljson https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64
   wget -c -O /usr/bin/cfssl-certinfo https://pkg.cfssl.org/R1.2/cfssl-certinfo_linux-amd64
 
