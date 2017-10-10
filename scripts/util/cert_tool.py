@@ -22,6 +22,7 @@ def check_cfssl():
 
     return False
 
+
 def gen_ca_cert(ca_dir='',debug=''):
 
     if check_cfssl() != True:

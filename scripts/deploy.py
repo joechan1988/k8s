@@ -75,10 +75,66 @@ def render(src, dest, **kw):
 
 def get_binaries():
     # subprocess.call([os.path.join(base_dir,'get-binaries.sh'),k8s_version])
-    shell_cmd = [os.path.join(base_dir,'util','get-binaries.sh'),
-                 configs.k8s_version,
-                 configs.update_binaries]
-    common.shell_exec(shell_cmd,debug=configs.debug)
+    # shell_cmd = [os.path.join(base_dir,'util','get-binaries.sh'),
+    #              configs.k8s_version,
+    #              configs.update_binaries]
+    # common.shell_exec(shell_cmd,debug=configs.debug)
+    print('------Downloading Binaries------')
+    util_bin_list = ["cfssl","cfssl-certinfo","cfssljson"]
+    k8s_bin_list = ["kubectl",
+                    "kubelet","kube-apiserver","kube-scheduler",
+                    "kube-controller-manager","kube-proxy","kubeadm"]
+    etcd_bin_list = ["etcd","etcdctl"]
+    flannel_bin_list = ["flanneld","mk-docker-opts.sh"]
+
+    base_url=configs.binaries_download_url
+
+    for bin in k8s_bin_list:
+        bin_path = common.check_binaries(bin)
+        shell_cmd = 'wget -c -P /usr/bin/ ' + \
+                    base_url +'binaries/' + configs.k8s_version + '/server/bin/' + bin
+        if not bin_path:
+            common.shell_exec(shell_cmd,shell=True,debug=configs.debug)
+            bin_path = common.check_binaries(bin)
+            common.shell_exec('chmod +x '+bin_path,shell=True,debug=configs.debug)
+        elif configs.update_binaries == 'yes':
+            common.shell_exec('rm -f '+bin_path, shell=True,debug=configs.debug)
+
+
+    for bin in etcd_bin_list:
+        bin_path = common.check_binaries(bin)
+        shell_cmd = 'wget -c -P /usr/bin/ ' + \
+                    base_url + 'etcd/' + bin
+        if not bin_path:
+            common.shell_exec(shell_cmd,shell=True,debug=configs.debug)
+            bin_path = common.check_binaries(bin)
+            common.shell_exec('chmod +x '+bin_path,shell=True,debug=configs.debug)
+        elif configs.update_binaries == 'yes':
+            common.shell_exec('rm -f '+bin_path, shell=True,debug=configs.debug)
+
+    for bin in flannel_bin_list:
+        bin_path = common.check_binaries(bin)
+        shell_cmd = 'wget -c -P /usr/bin/ ' + \
+                    base_url + 'flannel/' + bin
+        if not bin_path:
+            common.shell_exec(shell_cmd,shell=True,debug=configs.debug)
+            bin_path = common.check_binaries(bin)
+            common.shell_exec('chmod +x '+bin_path,shell=True,debug=configs.debug)
+        elif configs.update_binaries == 'yes':
+            common.shell_exec('rm -f '+bin_path, shell=True,debug=configs.debug)
+
+    for bin in util_bin_list:
+        bin_path = common.check_binaries(bin)
+        shell_cmd = 'wget -c -P /usr/bin/ ' + \
+                    base_url + 'util/' + bin
+        if not bin_path:
+            common.shell_exec(shell_cmd,shell=True,debug=configs.debug)
+            bin_path = common.check_binaries(bin)
+            common.shell_exec('chmod +x '+bin_path,shell=True,debug=configs.debug)
+        elif configs.update_binaries == 'yes':
+            common.shell_exec('rm -f '+bin_path, shell=True,debug=configs.debug)
+
+
 
 def generate_json_file(dest=None,json_obj=None):
     json_file = open(dest,'wb')
@@ -147,6 +203,10 @@ def generate_cert():
            os.path.join("/etc/kubernetes/","token.csv"),
            bootstrap_token=configs.bootstrap_token)
 
+    if not cert_tool.check_cfssl():
+        print('------Installing CFSSL Tools------')
+        exit(0)
+
 
     print('-----Generating CA Cert Files------')
     cert_tool.gen_ca_cert(ca_dir=k8s_ssl_dir,debug=configs.debug)
@@ -187,6 +247,7 @@ def generate_kubeconfig():
 
 def get_cert_from_master():
 
+    print('------Transporting SSL Files From Master Node------')
     prep_conf_dir('/etc/flanneld/ssl','',clear=True)
     prep_conf_dir(k8s_ssl_dir,'',clear=True)
 
@@ -397,6 +458,9 @@ def deploy():
                     label_master_node()
                     break
 
+def test():
+    pass
+
 def main():
     #------ Deployment Start ------
 
@@ -408,21 +472,22 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--test',dest='test_unit',type=str,default='')
     subparsers = parser.add_subparsers(help='Commands')
+
     parser_generate_cert = subparsers.add_parser('generate_cert', help='Generate Cert')
     parser_generate_cert.set_defaults(func=generate_cert)
 
     parser_deploy = subparsers.add_parser('deploy',help='Deploy Kubernetes')
     parser_deploy.set_defaults(func=deploy)
+
+    parser_test = subparsers.add_parser('test',help='Run Tests')
+    parser_test.set_defaults(func=test)
+
+    parser_test = subparsers.add_parser('get_binaries',help='Run Tests')
+    parser_test.set_defaults(func=get_binaries)
+
     args = parser.parse_args()
     args.func()
 
-    role = configs.node_role
-
-    if args.test_unit:
-        print('------Script Testing------')
-        generate_cert()
-        # configs.test()
-        sys.exit(0)
 
 if __name__ == "__main__":
     main()
