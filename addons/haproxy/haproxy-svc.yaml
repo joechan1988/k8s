@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: haproxy
+  namespace: kube-system
+spec:
+  ports:
+    - port: 10080
+      name: admin
+    - port: 18080
+      name: haproxy
+#  clusterIP: $cluster_ip
+  selector:
+    k8s-app: haproxy
+  type: NodePort
