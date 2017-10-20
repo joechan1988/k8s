@@ -12,6 +12,7 @@ import argparse
 import subprocess
 import shutil
 import paramiko
+import time
 from templates import json_schema
 from util import cert_tool
 from util import cfg
@@ -73,66 +74,100 @@ def render(src, dest, **kw):
         f.write(t.substitute(**kw))
     print("Generated configuration file: %s" % dest)
 
+def copy_binaries():
+
+    print('------Copying Binaries to System Executables Directory------')
+    parent_folder = os.path.abspath(os.path.join(base_dir,os.path.pardir))
+    bin_folder = os.path.join(parent_folder,"bin")
+
+    copy_cmd = ["cp","-f",bin_folder+"/*","/usr/bin"]
+    common.shell_exec(cmd=copy_cmd,debug=configs.debug)
+
+
 def get_binaries():
     # subprocess.call([os.path.join(base_dir,'get-binaries.sh'),k8s_version])
     # shell_cmd = [os.path.join(base_dir,'util','get-binaries.sh'),
     #              configs.k8s_version,
     #              configs.update_binaries]
     # common.shell_exec(shell_cmd,debug=configs.debug)
-    print('------Downloading Binaries------')
+    print('------Preparing Required Binaries------')
     util_bin_list = ["cfssl","cfssl-certinfo","cfssljson"]
     k8s_bin_list = ["kubectl",
                     "kubelet","kube-apiserver","kube-scheduler",
-                    "kube-controller-manager","kube-proxy","kubeadm"]
-    etcd_bin_list = ["etcd","etcdctl"]
-    flannel_bin_list = ["flanneld","mk-docker-opts.sh"]
+                    "kube-controller-manager","kube-proxy","kubeadm",
+                    "etcd","etcdctl","flanneld","mk-docker-opts.sh",
+                    "cfssl","cfssl-certinfo","cfssljson"]
+    # etcd_bin_list = ["etcd","etcdctl"]
+    # flannel_bin_list = ["flanneld","mk-docker-opts.sh"]
 
     base_url=configs.binaries_download_url
 
+    parent_dir = os.path.abspath(os.path.join(base_dir,os.path.pardir))
+    bin_dir = os.path.join(parent_dir,"bin")
+    sys_bin_dir = '/usr/bin/'
+
+    common.shell_exec('chmod +x '+bin_dir+'/*',shell=True,debug=configs.debug)
+
     for bin in k8s_bin_list:
-        bin_path = common.check_binaries(bin)
-        shell_cmd = 'wget -c -P /usr/bin/ ' + \
+        bin_path = common.check_binaries(bin_dir,bin)
+        sys_bin_path = common.check_binaries(sys_bin_dir,bin)
+        download_cmd = 'wget -c -P /usr/bin/ ' + \
                     base_url +'binaries/' + configs.k8s_version + '/server/bin/' + bin
+        cp_cmd = ["cp","-f",bin_dir+"/"+bin,"/usr/bin"]
         if not bin_path:
-            common.shell_exec(shell_cmd,shell=True,debug=configs.debug)
-            bin_path = common.check_binaries(bin)
-            common.shell_exec('chmod +x '+bin_path,shell=True,debug=configs.debug)
-        elif configs.update_binaries == 'yes':
-            common.shell_exec('rm -f '+bin_path, shell=True,debug=configs.debug)
+            if not sys_bin_path:
+                common.shell_exec(download_cmd,shell=True,debug=configs.debug)
+                bin_path = common.check_binaries(sys_bin_dir,bin)
+                common.shell_exec('chmod +x '+bin_path,shell=True,debug=configs.debug)
+            elif configs.update_binaries == 'yes':
+                common.shell_exec('rm -f '+bin_path, shell=True,debug=configs.debug)
+                common.shell_exec(download_cmd,shell=True,debug=configs.debug)
+                bin_path = common.check_binaries(sys_bin_dir,bin)
+                common.shell_exec('chmod +x '+bin_path,shell=True,debug=configs.debug)
+        else:
+            if not sys_bin_path:
+                common.shell_exec(cp_cmd,debug=configs.debug)
+                # bin_path = common.check_binaries(sys_bin_dir,bin)
+                # common.shell_exec('chmod +x '+bin_path,shell=True,debug=configs.debug)
+            elif configs.update_binaries == 'yes':
+                common.shell_exec('rm -f '+bin_path, shell=True,debug=configs.debug)
+                common.shell_exec(cp_cmd,debug=configs.debug)
+                # bin_path = common.check_binaries(sys_bin_dir,bin)
+                # common.shell_exec('chmod +x '+bin_path,shell=True,debug=configs.debug)
 
 
-    for bin in etcd_bin_list:
-        bin_path = common.check_binaries(bin)
-        shell_cmd = 'wget -c -P /usr/bin/ ' + \
-                    base_url + 'etcd/' + bin
-        if not bin_path:
-            common.shell_exec(shell_cmd,shell=True,debug=configs.debug)
-            bin_path = common.check_binaries(bin)
-            common.shell_exec('chmod +x '+bin_path,shell=True,debug=configs.debug)
-        elif configs.update_binaries == 'yes':
-            common.shell_exec('rm -f '+bin_path, shell=True,debug=configs.debug)
-
-    for bin in flannel_bin_list:
-        bin_path = common.check_binaries(bin)
-        shell_cmd = 'wget -c -P /usr/bin/ ' + \
-                    base_url + 'flannel/' + bin
-        if not bin_path:
-            common.shell_exec(shell_cmd,shell=True,debug=configs.debug)
-            bin_path = common.check_binaries(bin)
-            common.shell_exec('chmod +x '+bin_path,shell=True,debug=configs.debug)
-        elif configs.update_binaries == 'yes':
-            common.shell_exec('rm -f '+bin_path, shell=True,debug=configs.debug)
-
-    for bin in util_bin_list:
-        bin_path = common.check_binaries(bin)
-        shell_cmd = 'wget -c -P /usr/bin/ ' + \
-                    base_url + 'util/' + bin
-        if not bin_path:
-            common.shell_exec(shell_cmd,shell=True,debug=configs.debug)
-            bin_path = common.check_binaries(bin)
-            common.shell_exec('chmod +x '+bin_path,shell=True,debug=configs.debug)
-        elif configs.update_binaries == 'yes':
-            common.shell_exec('rm -f '+bin_path, shell=True,debug=configs.debug)
+    # for bin in etcd_bin_list:
+    #     bin_path = common.check_binaries(bin)
+    #     download_cmd = 'wget -c -P /usr/bin/ ' + \
+    #                 base_url + 'etcd/' + bin
+    #     if not bin_path:
+    #         common.shell_exec(download_cmd,shell=True,debug=configs.debug)
+    #         bin_path = common.check_binaries(bin)
+    #         common.shell_exec('chmod +x '+bin_path,shell=True,debug=configs.debug)
+    #     elif configs.update_binaries == 'yes':
+    #         common.shell_exec('rm -f '+bin_path, shell=True,debug=configs.debug)
+    #
+    # for bin in flannel_bin_list:
+    #     bin_path = common.check_binaries(bin)
+    #     download_cmd = 'wget -c -P /usr/bin/ ' + \
+    #                 base_url + 'flannel/' + bin
+    #     if not bin_path:
+    #         common.shell_exec(download_cmd,shell=True,debug=configs.debug)
+    #         bin_path = common.check_binaries(bin)
+    #         common.shell_exec('chmod +x '+bin_path,shell=True,debug=configs.debug)
+    #     elif configs.update_binaries == 'yes':
+    #         common.shell_exec('rm -f '+bin_path, shell=True,debug=configs.debug)
+    #
+    # for bin in util_bin_list:
+    #     bin_path = common.check_binaries(bin)
+    #     download_cmd = 'wget -c -P /usr/bin/ ' + \
+    #                 base_url + 'util/' + bin
+    #     if not bin_path:
+    #         common.shell_exec(download_cmd,shell=True,debug=configs.debug)
+    #         bin_path = common.check_binaries(bin)
+    #         common.shell_exec('chmod +x '+bin_path,shell=True,debug=configs.debug)
+    #     elif configs.update_binaries == 'yes':
+    #         common.shell_exec('rm -f '+bin_path, shell=True,debug=configs.debug)
 
 
 
@@ -344,9 +379,21 @@ def create_csr_auto_approve():
     print('------Configurating CSR Auto Approve ------')
 
     # rbac_cmd = "kubectl create clusterrolebinding kubelet-bootstrap --clusterrole=system:node-bootstrapper --user=kubelet-bootstrap"
-    csr_cmd = "kubectl create -f ../addons/csr-auto-approve.yml"
+    parent_folder = os.path.abspath(os.path.join(base_dir,os.path.pardir))
+    addons_folder = os.path.join(parent_folder,"addons")
+    csr_cmd = "kubectl create -f "+ addons_folder +"/csr-auto-approve.yml"
     # shell_exec(rbac_cmd)
-    common.shell_exec(csr_cmd,shell=True,debug=configs.debug)
+
+    for _ in range(0,10):
+        output = common.shell_exec(csr_cmd,shell=True,debug=configs.debug,output=True)
+        if 'created' in output:
+            break
+        time.sleep(1)
+        continue
+
+
+
+    # common.shell_exec(csr_cmd,shell=True,debug=configs.debug)
 
 def label_master_node():
 
@@ -459,7 +506,7 @@ def deploy():
                     break
 
 def test():
-    pass
+    create_csr_auto_approve()
 
 def main():
     #------ Deployment Start ------
