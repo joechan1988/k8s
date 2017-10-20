@@ -1,6 +1,18 @@
 #!/usr/bin/env bash
 
-yum install -y wget python2-pip.noarch
+basepath=$(cd `dirname $0`; pwd)
 
-pip install -r requirements.txt
+yum install -y wget python2-pip.noarch bash-completion
+
+pip install --upgrade pip
+pip install -r ${basepath}/requirements.txt
+
+${basepath}/deploy.py deploy
+
+source /usr/share/bash-completion/bash_completion
+source <(kubectl completion bash)
+cat <<EOF >>/root/.bashrc
+source <(kubectl completion bash)
+EOF
+
 

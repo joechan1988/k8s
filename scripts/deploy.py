@@ -384,14 +384,19 @@ def create_csr_auto_approve():
     csr_cmd = "kubectl create -f "+ addons_folder +"/csr-auto-approve.yml"
     # shell_exec(rbac_cmd)
 
-    for _ in range(0,10):
+    count = 0
+    for count in range(0,10):
         output = common.shell_exec(csr_cmd,shell=True,debug=configs.debug,output=True)
         if 'created' in output:
+            print('Created')
             break
+
+        print('Wait For Creating...')
         time.sleep(1)
         continue
 
-
+    if count>=9 :
+        print("Failed to Create Autoprove");exit(1)
 
     # common.shell_exec(csr_cmd,shell=True,debug=configs.debug)
 

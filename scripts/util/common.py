@@ -6,27 +6,48 @@ import os
 
 def shell_exec(cmd,shell=False,debug='',output=False):
 
-
-    if debug != "1":
-        if not output:
-            subprocess.call(cmd,stdout=open(os.devnull, 'w'),\
+    if not output:
+        if debug != "1":
+            subprocess.call(cmd,stdout=open(os.devnull, 'w'), \
                         stderr=subprocess.STDOUT,shell=shell)
         else:
-            try:
-                return subprocess.check_output(cmd,shell=shell,stdout=open(os.devnull, 'w'), \
-                                           stderr=subprocess.STDOUT)
-            except subprocess.CalledProcessError as ex:
-                return "failed"
-
+            subprocess.call(cmd,shell=shell)
 
     else:
-        if not output:
-            subprocess.call(cmd,shell=shell)
+        if debug !="1":
+            try:
+                return subprocess.check_output(cmd,shell=shell,stderr=subprocess.STDOUT)
+            except subprocess.CalledProcessError as ex:
+                return "failed"
         else:
             try:
                 return subprocess.check_output(cmd,shell=shell)
             except subprocess.CalledProcessError as ex:
                 return "failed"
+
+
+
+
+    #
+    # if debug != "1":
+    #     if not output:
+    #         subprocess.call(cmd,stdout=open(os.devnull, 'w'),\
+    #                     stderr=subprocess.STDOUT,shell=shell)
+    #     else:
+    #         try:
+    #             return subprocess.check_output(cmd,shell=shell)
+    #         except subprocess.CalledProcessError as ex:
+    #             return "failed"
+    #
+    #
+    # else:
+    #     if not output:
+    #         subprocess.call(cmd,shell=shell)
+    #     else:
+    #         try:
+    #             return subprocess.check_output(cmd,shell=shell)
+    #         except subprocess.CalledProcessError as ex:
+    #             return "failed"
 
 def check_binaries(path,bin_name):
     # sys_path_str = os.environ["PATH"]
