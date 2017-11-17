@@ -30,7 +30,7 @@ cfg_file = base_dir+'/k8s.cfg'
 
 master_service_list = ['kube-apiserver',
                 'kube-controller-manager','kube-scheduler']
-node_service_list = ['flanneld','docker','kubelet','kube-proxy']
+node_service_list = ['docker','kubelet','kube-proxy']
 success_list =[]
 failed_list = []
 
@@ -55,6 +55,7 @@ k8s_ssl_dir = "/etc/kubernetes/ssl/"
 
 
 #------ Functions: Utilities ------
+
 
 def prep_conf_dir(root, name,clear=False):
     absolute_path = os.path.join(root, name)
@@ -134,41 +135,6 @@ def get_binaries():
                 common.shell_exec(cp_cmd,debug=configs.debug)
                 # bin_path = common.check_binaries(sys_bin_dir,bin)
                 # common.shell_exec('chmod +x '+bin_path,shell=True,debug=configs.debug)
-
-
-    # for bin in etcd_bin_list:
-    #     bin_path = common.check_binaries(bin)
-    #     download_cmd = 'wget -c -P /usr/bin/ ' + \
-    #                 base_url + 'etcd/' + bin
-    #     if not bin_path:
-    #         common.shell_exec(download_cmd,shell=True,debug=configs.debug)
-    #         bin_path = common.check_binaries(bin)
-    #         common.shell_exec('chmod +x '+bin_path,shell=True,debug=configs.debug)
-    #     elif configs.update_binaries == 'yes':
-    #         common.shell_exec('rm -f '+bin_path, shell=True,debug=configs.debug)
-    #
-    # for bin in flannel_bin_list:
-    #     bin_path = common.check_binaries(bin)
-    #     download_cmd = 'wget -c -P /usr/bin/ ' + \
-    #                 base_url + 'flannel/' + bin
-    #     if not bin_path:
-    #         common.shell_exec(download_cmd,shell=True,debug=configs.debug)
-    #         bin_path = common.check_binaries(bin)
-    #         common.shell_exec('chmod +x '+bin_path,shell=True,debug=configs.debug)
-    #     elif configs.update_binaries == 'yes':
-    #         common.shell_exec('rm -f '+bin_path, shell=True,debug=configs.debug)
-    #
-    # for bin in util_bin_list:
-    #     bin_path = common.check_binaries(bin)
-    #     download_cmd = 'wget -c -P /usr/bin/ ' + \
-    #                 base_url + 'util/' + bin
-    #     if not bin_path:
-    #         common.shell_exec(download_cmd,shell=True,debug=configs.debug)
-    #         bin_path = common.check_binaries(bin)
-    #         common.shell_exec('chmod +x '+bin_path,shell=True,debug=configs.debug)
-    #     elif configs.update_binaries == 'yes':
-    #         common.shell_exec('rm -f '+bin_path, shell=True,debug=configs.debug)
-
 
 
 def generate_json_file(dest=None,json_obj=None):
@@ -272,8 +238,6 @@ def generate_cert():
 
 
 def generate_kubeconfig():
-    # subprocess.call([os.path.join(base_dir, "util", "generate_kubeconfig.sh"), \
-    #                  kube_apiserver, bootstrap_token])
 
     print('------Generating kube-config------')
     shell_cmd = [os.path.join(base_dir, "util", "generate_kubeconfig.sh"), \
@@ -294,7 +258,6 @@ def get_cert_from_master():
     scpclient = SCPClient(ssh.get_transport(),socket_timeout=15.0)
     scpclient.get('/etc/kubernetes/','/etc',recursive=True)
     scpclient.get('/etc/flanneld/ssl','/etc/flanneld',recursive=True)
-    # sftp = paramiko.SFTPClient.from_transport(ssh.get_transport())
 
 
 
@@ -416,6 +379,7 @@ def initiate_flanneld():
 
 def start_service(service_name):
     print("------Starting Service: %s"% service_name)
+    subprocess.call(["systemctl","enable",service_name])
     output = subprocess.check_output(["systemctl","restart",service_name])
 
     if 'failed' in output:
@@ -428,47 +392,33 @@ def deploy():
     role = configs.node_role
 
     get_binaries()
+    common.disable_selinux()
+
+    if not common.check_preinstalled_binaries("docker"):
+        print("FATAL:  Docker is NOT installed")
+        exit(2)
+
     if role == 'master':
         generate_cert()
         generate_kubeconfig()
 
         config_etcd()
-        config_flannel()
         config_apiserver()
         config_controller_manager()
         config_scheduler()
         config_proxy()
         config_kubelet()
 
-    if role == 'minion':
-        get_cert_from_master()
-        config_flannel()
-        config_proxy()
-        config_kubelet()
+        #---Start Service---
 
-    if role == 'master-backup':
-        get_cert_from_master()
-        config_flannel()
-        config_apiserver()
-        config_controller_manager()
-        config_scheduler()
-        config_proxy()
-        config_kubelet()
-
-    subprocess.call(["systemctl", "daemon-reload"])
-
-    #------Start Service -------
-
-    if role == 'master':
-
+        subprocess.call(["systemctl", "daemon-reload"])
         start_service('etcd')
         #---Start Master Components---
         for service in master_service_list:
             start_service(service)
         # subprocess.call(["kubectl", "apply", "-f", "../addons/csr-auto-approve.yml"])
         create_csr_auto_approve()
-        #---initiate flannel etcd-data -----
-        initiate_flanneld()
+
         #---Start K8s Node Components---
         for service in node_service_list:
             start_service(service)
@@ -477,41 +427,125 @@ def deploy():
         print('Failed to Start: %s' % failed_list)
 
         if 'kube-apiserver' in success_list \
-            and 'kube-controller-manager' in success_list \
-            and 'kubelet' in success_list:
+                and 'kube-controller-manager' in success_list \
+                and 'kubelet' in success_list:
             while True:
                 check_node = subprocess.check_output(["kubectl","get","node"])
                 if node_ip in check_node:
                     label_master_node()
                     break
 
-    elif role == 'minion':
+        if configs.cni_plugin == 'flannel':
+            config_flannel()
+            #---initiate flannel etcd-data -----
+            initiate_flanneld()
+            start_service("flanneld")
+        elif configs.cni_plugin == 'calico':
+            subprocess.call(["../addons/calico/calico-etcd-secrets.sh"])
+            subprocess.call(["kubectl", "apply", "-f", "../addons/calico/*.yaml"])
+
+    if role == 'minion':
+        get_cert_from_master()
+        # config_flannel()
+        config_proxy()
+        config_kubelet()
+
+        subprocess.call(["systemctl", "daemon-reload"])
         for service in node_service_list:
             start_service(service)
-
         print('Successfully Start Service: %s' % success_list)
         print('Failed to Start: %s' % failed_list)
 
-    elif role == 'master-backup':
+        if configs.cni_plugin == 'flannel':
+            config_flannel()
+            #---initiate flannel etcd-data -----
+            initiate_flanneld()
+            start_service("flanneld")
+        elif configs.cni_plugin == 'calico':
+            subprocess.call(["../addons/calico/calico-etcd-secrets.sh"])
+            subprocess.call(["kubectl", "apply", "-f", "../addons/calico/*.yaml"])
 
-        for service in master_service_list:
-            start_service(service)
-        for service in node_service_list:
-            start_service(service)
-        print('Successfully Start Service: %s' % success_list)
-        print('Failed to Start: %s' % failed_list)
 
-        if 'kube-apiserver' in success_list \
-            and 'kube-controller-manager' in success_list \
-            and 'kubelet' in success_list:
-            while True:
-                check_node = subprocess.check_output(["kubectl","--kubeconfig=/etc/kubernetes/admin.kubeconfig","get","node"])
-                if node_ip in check_node:
-                    label_master_node()
-                    break
+    if role == 'master-backup':
+        get_cert_from_master()
+        # config_flannel()
+        config_apiserver()
+        config_controller_manager()
+        config_scheduler()
+        config_proxy()
+        config_kubelet()
+
+        subprocess.call(["systemctl", "daemon-reload"])
+        if configs.cni_plugin == 'flannel':
+            config_flannel()
+            #---initiate flannel etcd-data -----
+            initiate_flanneld()
+            start_service("flanneld")
+        elif configs.cni_plugin == 'calico':
+            subprocess.call(["../addons/calico/calico-etcd-secrets.sh"])
+            subprocess.call(["kubectl", "apply", "-f", "../addons/calico/*.yaml"])
+
+
+    # subprocess.call(["systemctl", "daemon-reload"])
+
+    #------Start Service -------
+    #
+    # if role == 'master':
+    #
+    #     start_service('etcd')
+    #     #---Start Master Components---
+    #     for service in master_service_list:
+    #         start_service(service)
+    #     # subprocess.call(["kubectl", "apply", "-f", "../addons/csr-auto-approve.yml"])
+    #     create_csr_auto_approve()
+    #     #---initiate flannel etcd-data -----
+    #     initiate_flanneld()
+    #     #---Start K8s Node Components---
+    #     for service in node_service_list:
+    #         start_service(service)
+    #
+    #     print('Successfully Start Service: %s' % success_list)
+    #     print('Failed to Start: %s' % failed_list)
+    #
+    #     if 'kube-apiserver' in success_list \
+    #         and 'kube-controller-manager' in success_list \
+    #         and 'kubelet' in success_list:
+    #         while True:
+    #             check_node = subprocess.check_output(["kubectl","get","node"])
+    #             if node_ip in check_node:
+    #                 label_master_node()
+    #                 break
+    #
+    # elif role == 'minion':
+    #     for service in node_service_list:
+    #         start_service(service)
+    #
+    #     print('Successfully Start Service: %s' % success_list)
+    #     print('Failed to Start: %s' % failed_list)
+    #
+    # elif role == 'master-backup':
+    #
+    #     for service in master_service_list:
+    #         start_service(service)
+    #     for service in node_service_list:
+    #         start_service(service)
+    #     print('Successfully Start Service: %s' % success_list)
+    #     print('Failed to Start: %s' % failed_list)
+    #
+    #     if 'kube-apiserver' in success_list \
+    #         and 'kube-controller-manager' in success_list \
+    #         and 'kubelet' in success_list:
+    #         while True:
+    #             check_node = subprocess.check_output(["kubectl","--kubeconfig=/etc/kubernetes/admin.kubeconfig","get","node"])
+    #             if node_ip in check_node:
+    #                 label_master_node()
+    #                 break
 
 def test():
-    create_csr_auto_approve()
+    if not common.check_preinstalled_binaries("docker") \
+        or not common.check_preinstalled_binaries("docker-current"):
+        print("FATAL:  Docker is NOT installed")
+    exit(2)
 
 def main():
     #------ Deployment Start ------

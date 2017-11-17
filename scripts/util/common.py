@@ -61,3 +61,27 @@ def check_binaries(path,bin_name):
         return bin_path
 
     return None
+
+def check_preinstalled_binaries(bin_name):
+    sys_path_str = os.environ["PATH"]
+    sys_path = sys_path_str.split(':')
+    for item in sys_path:
+        if os.path.exists(os.path.join(item,bin_name)):
+            return True
+
+    return False
+
+def disable_selinux():
+
+    output = subprocess.check_output(["getenforce"])
+
+    if 'Enforcing' in output:
+        print('SELinux is Enabled.Disabling it')
+        subprocess.call(["setenforce","0"])
+        with open("/etc/selinux/config","r") as f:
+            lines = f.readlines()
+        with open("/etc/selinux/config","w") as f_w:
+            for line in lines:
+                if "SELINUX=enforcing" in line:
+                    line = line.replace("enforcing","disabled")
+                f_w.write(line)

@@ -21,6 +21,7 @@ ExecStart=/usr/bin/kubelet \
   --logtostderr=true \
   --cgroup-driver=systemd \
   --fail-swap-on=false \
+  --network-plugin=cni \
   --v=2
 
 ExecStopPost=/sbin/iptables -A INPUT -s 10.0.0.0/8 -p tcp --dport 4194 -j ACCEPT
