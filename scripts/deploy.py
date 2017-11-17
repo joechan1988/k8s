@@ -112,8 +112,9 @@ def get_binaries():
     for bin in k8s_bin_list:
         bin_path = common.check_binaries(bin_dir,bin)
         sys_bin_path = common.check_binaries(sys_bin_dir,bin)
-        download_cmd = 'wget -c -P /usr/bin/ ' + \
-                    base_url +'binaries/' + configs.k8s_version + '/server/bin/' + bin
+        # download_cmd = 'wget -c -P /usr/bin/ ' + \
+        #             base_url +'binaries/' + configs.k8s_version + '/server/bin/' + bin
+        download_cmd = 'curl -o /usr/bin/'+bin+ ' -C - '+ base_url+'binaries/' + configs.k8s_version + '/server/bin/' + bin
         cp_cmd = ["cp","-f",bin_dir+"/"+bin,"/usr/bin"]
         if not bin_path:
             if not sys_bin_path:
@@ -442,7 +443,7 @@ def deploy():
             start_service("flanneld")
         elif configs.cni_plugin == 'calico':
             subprocess.call(["../addons/calico/calico-etcd-secrets.sh"])
-            subprocess.call(["kubectl", "apply", "-f", "../addons/calico/*.yaml"])
+            subprocess.call(["kubectl", "apply", "-f", "../addons/calico/"])
 
     if role == 'minion':
         get_cert_from_master()
