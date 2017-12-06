@@ -186,7 +186,8 @@ def generate_cert():
     etcd_csr_json["hosts"] = etcd_cert_hosts
 
     # ------Prepare Directory ------
-    prep_conf_dir(etcd_ssl_dir, '', clear=True)
+    if configs.etcd_cluster=="new":
+        prep_conf_dir(etcd_ssl_dir, '', clear=True)
     prep_conf_dir('/etc/kubernetes', '', clear=True)
     prep_conf_dir(k8s_ssl_dir, '', clear=True)
     prep_conf_dir('/etc/flanneld/ssl/','',clear=True)
@@ -210,13 +211,15 @@ def generate_cert():
         exit(0)
 
 
+
     print('-----Generating CA Cert Files------')
     cert_tool.gen_ca_cert(ca_dir=k8s_ssl_dir,debug=configs.debug)
-    print('-----Generating etcd Cert Files------')
-    cert_tool.gen_cert_files(ca_dir=k8s_ssl_dir,profile='kubernetes',\
-                             csr_file=etcd_ssl_dir+'etcd-csr.json',\
-                             cert_name='etcd',\
-                             dest_dir=etcd_ssl_dir,debug=configs.debug)
+    if configs.etcd_cluster=="new":
+        print('-----Generating etcd Cert Files------')
+        cert_tool.gen_cert_files(ca_dir=k8s_ssl_dir,profile='kubernetes',\
+                                 csr_file=etcd_ssl_dir+'etcd-csr.json',\
+                                 cert_name='etcd',\
+                                 dest_dir=etcd_ssl_dir,debug=configs.debug)
     print('-----Generating Flannel Cert Files------')
     cert_tool.gen_cert_files(ca_dir=k8s_ssl_dir,profile='kubernetes',\
                              csr_file='/etc/flanneld/ssl/flanneld-csr.json',\
@@ -265,24 +268,36 @@ def get_cert_from_master():
 #------ Functions: Deployment Actions ------
 def config_etcd():
     print('------Configurating Etcd------')
-    prep_conf_dir("/var/lib/etcd",'',clear=True)
-    while True:
-        discovery = subprocess.check_output(["curl", "-s", "https://discovery.etcd.io/new?size=1"])
-        if "etcd.io" in discovery:
-            break
+    etcd_cluster = configs.etcd_cluster
 
-    render(os.path.join(template_dir,"etcd.service"),
-           os.path.join(systemd_dir,"etcd.service"),
-           node_ip=node_ip,
-           node_name=node_name,
-           discovery=discovery.replace('https','http'))
+    if etcd_cluster=="new":
+        prep_conf_dir("/var/lib/etcd",'',clear=True)
+        while True:
+            discovery = subprocess.check_output(["curl", "-s", "https://discovery.etcd.io/new?size=1"])
+            if "etcd.io" in discovery:
+                break
+
+        render(os.path.join(template_dir,"etcd.service"),
+               os.path.join(systemd_dir,"etcd.service"),
+               node_ip=node_ip,
+               node_name=node_name,
+               discovery=discovery.replace('https','http'))
+    elif etcd_cluster == "existing":
+        print("Using Existing etcd Cluster")
+
+
+
 
 def config_flannel():
     print('------Configurating Flannel------')
 
     render(os.path.join(template_dir,"flanneld.service"),
            os.path.join(systemd_dir, "flanneld.service"),
-           master_ip=configs.master_ip)
+           etcd_endpoints=configs.etcd_endpoints,
+           etcd_cafile=configs.etcd_cafile,
+           etcd_keyfile=configs.etcd_keyfile,
+           etcd_certfile=configs.etcd_certfile
+           )
 
     render(os.path.join(template_dir,"docker.service"),
            os.path.join(systemd_dir, "docker.service"))
@@ -301,13 +316,29 @@ def config_kubelet():
 def config_apiserver():
     print('------Configurating kube-apiserver ------')
 
-    render(os.path.join(template_dir,"kube-apiserver.service"),
-           os.path.join(systemd_dir, "kube-apiserver.service"),
-           master_ip=configs.master_ip,
-           node_ip=node_ip,
-           service_cidr=configs.service_cidr,
-           node_port_range=configs.node_port_range,
-           )
+    if configs.etcd_ssl=="yes":
+        render(os.path.join(template_dir,"kube-apiserver.service"),
+               os.path.join(systemd_dir, "kube-apiserver.service"),
+               etcd_endpoints=configs.etcd_endpoints,
+               etcd_cafile=configs.etcd_cafile,
+               etcd_keyfile=configs.etcd_keyfile,
+               etcd_certfile=configs.etcd_certfile,
+               node_ip=node_ip,
+               service_cidr=configs.service_cidr,
+               node_port_range=configs.node_port_range,
+               )
+    else:
+        render(os.path.join(template_dir,"kube-apiserver.service"),
+               os.path.join(systemd_dir, "kube-apiserver.service"),
+               etcd_endpoints=configs.etcd_endpoints,
+               etcd_cafile="",
+               etcd_keyfile="",
+               etcd_certfile="",
+               node_ip=node_ip,
+               service_cidr=configs.service_cidr,
+               node_port_range=configs.node_port_range,
+               )
+
 
 def config_controller_manager():
     print('------Configurating kube-controller-manager ------')
