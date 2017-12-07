@@ -1,20 +1,25 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
+import logging
 import subprocess
 import os
+import paramiko
+from string import Template
 
-def shell_exec(cmd,shell=False,debug='',output=False):
+import shutil
+
+
+def shell_exec(cmd,shell=False,debug=False,output=False):
 
     if not output:
-        if debug != "1":
+        if not debug:
             subprocess.call(cmd,stdout=open(os.devnull, 'w'), \
                         stderr=subprocess.STDOUT,shell=shell)
         else:
             subprocess.call(cmd,shell=shell)
 
     else:
-        if debug !="1":
+        if not debug:
             try:
                 return subprocess.check_output(cmd,shell=shell,stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as ex:
@@ -25,7 +30,26 @@ def shell_exec(cmd,shell=False,debug='',output=False):
             except subprocess.CalledProcessError as ex:
                 return "failed"
 
+def remote_exec(cmd,debug=False,ip='',user='',password=''):
 
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(ip,22,
+                user,
+                password)
+
+    stdin,stdout,stderr = ssh.exec_command(cmd)
+    # stdin,stdout,stderr = ssh.exec_command("env")
+
+
+    out_ret = stdout.readlines()
+    err_ret = stderr.readlines()
+
+    ssh.close()
+    if err_ret:
+        return err_ret
+    else:
+        return out_ret
 
 
     #
@@ -85,3 +109,21 @@ def disable_selinux():
                 if "SELINUX=enforcing" in line:
                     line = line.replace("enforcing","disabled")
                 f_w.write(line)
+
+
+def render(src, dest, **kw):
+    t = Template(open(src, 'r').read())
+    if not os.path.exists(dest):
+        os.mknod(dest)
+    with open(dest, 'w') as f:
+        f.write(t.substitute(**kw))
+    print("Generated configuration file: %s" % dest)
+
+def prep_conf_dir(root, name,clear=False):
+    absolute_path = os.path.join(root, name)
+    if clear == True and os.path.exists(absolute_path):
+        shutil.rmtree(absolute_path,ignore_errors=True)
+
+    if not os.path.exists(absolute_path):
+        os.makedirs(absolute_path)
+    return absolute_path

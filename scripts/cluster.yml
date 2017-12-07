@@ -1,0 +1,47 @@
+debug: False
+
+nodes:
+  - hostname: k8s-master1
+    role: [control,etcd]
+    external_IP: "192.168.1.201"
+    ssh_user: "root"
+    ssh_password: "123456"
+  - hostname: k8s-master2
+    role: [control]
+    external_IP: 192.168.1.202
+  - hostname: k8s-minion1
+    role: [worker]
+    external_IP: "192.168.1.203"
+
+kubernetes:
+  version: "1.8.0"
+  service_cidr: "10.254.0.0/16"
+  cluster_cidr: "172.30.0.0/16"
+  node_port_range: "8400-9000"
+  cluster_kubernetes_svc_ip: "10.254.0.1"
+  cluster_dns_svc_ip: "10.254.0.2"
+  cluster_dns_domain: "cluster.local."
+
+etcd:
+  cluster_type: "existing"
+  ssl: "yes"
+  keyfile: "/etc/etcd/ssl/etcd-key.pem"
+  cafile: "/etc/etcd/ssl/ca.pem"
+  certfile: "/etc/etcd/ssl/etcd.pem"
+  nodes:
+    - name: "etcd1"
+      IP: "192.168.1.201"
+    - name: "etcd2"
+      IP: "192.168.1.202"
+
+cni:
+  plugin: "flannel" #Options: flannel,calico
+  flannel:
+    etcd_prefix: /kubernetes/network
+  calico:
+    etcd_endpoints: ""
+
+binaries:
+  download_url: "ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/"
+  list:
+    - "kube-apiserver"
