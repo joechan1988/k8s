@@ -1,5 +1,5 @@
 import logging
-from util import common
+from util.common import RemoteShell
 
 
 class Service(object):
@@ -22,7 +22,7 @@ class Service(object):
             name = node.get("hostname")
 
             logging.info("Starting "+self.service_name+" Service On Node: "+name)
-            rsh = common.RemoteShell(ip, user, password)
+            rsh = RemoteShell(ip, user, password)
             rsh.connect()
 
             output = rsh.execute("systemctl restart "+self.service_name)
