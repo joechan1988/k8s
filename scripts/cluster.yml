@@ -1,5 +1,7 @@
 debug: False
 
+FQDN: "k8s.wocloud.org"
+
 nodes:
   - hostname: k8s-master1
     role: [control]
