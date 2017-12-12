@@ -58,7 +58,7 @@ def test():
     #
     # cmd = 'env'
     logging.debug(cmd)
-    ret = common.remote_exec(cmd,ip='192.168.1.199',user='root',password='123456')
+    ret = common.shell_exec_remote(cmd, ip='192.168.1.199', user='root', password='123456')
 
     print(ret)
 

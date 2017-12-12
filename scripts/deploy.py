@@ -210,8 +210,6 @@ def generate_cert():
         print('------Installing CFSSL Tools------')
         exit(0)
 
-
-
     print('-----Generating CA Cert Files------')
     cert_tool.gen_ca_cert(ca_dir=k8s_ssl_dir,debug=configs.debug)
     if configs.etcd_cluster=="new":
@@ -469,7 +467,7 @@ def deploy():
 
         if configs.cni_plugin == 'flannel':
             config_flannel()
-            #---initiate flannel etcd-data -----
+            # ---initiate flannel etcd-data -----
             initiate_flanneld()
             start_service("flanneld")
         elif configs.cni_plugin == 'calico':
