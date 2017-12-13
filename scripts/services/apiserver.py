@@ -17,7 +17,7 @@ k8s_ssl_dir = constants.k8s_ssl_dir
 
 class Apiserver(Service):
     def __init__(self):
-        super(Apiserver,self).__init__()
+        super(Apiserver, self).__init__()
         self.service_name = 'kube-apiserver'
 
     def configure(self, **configs):
@@ -76,7 +76,7 @@ class Apiserver(Service):
 
         cmd = "head -c 16 /dev/urandom | od -An -t x | tr -d ' '"
         ret = common.shell_exec(cmd, shell=True, debug=constants.debug, output=True)
-        return ret
+        return ret.replace("\n", "")
 
     def deploy(self):
 
@@ -129,3 +129,7 @@ class Apiserver(Service):
             rsh.copy(tmp_dir + "ca-key.pem", self.ca_key)
             rsh.copy(tmp_dir + "kubernetes.pem", self.k8s_cert)
             rsh.copy(tmp_dir + "kubernetes-key.pem", self.k8s_key)
+
+            rsh.execute("systemctl enable kube-apiserver")
+
+            rsh.close()

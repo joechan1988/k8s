@@ -5,6 +5,7 @@ from util import config_parser
 from util import common
 from cmd import cert, deploy
 from services.etcd import Etcd
+from services.apiserver import Apiserver
 from templates import constants
 import logging
 
@@ -61,8 +62,35 @@ def test_deploy_etcd():
     print(ret)
 
 
+def test_deploy_apiserver():
+    configs = config_parser.Config("./cluster.yml")
+    configs.load()
+
+    deploy.prep_dir()
+    cert.generate_ca_cert(constants.tmp_k8s_dir)
+
+    apiserver = Apiserver()
+    apiserver.configure(**configs.data)
+
+    apiserver.deploy()
+
+    ret = apiserver.start()
+    print(ret)
+
+
+def test_admin_kubeconfig():
+    deploy.generate_admin_kubeconfig()
+
+
+def test_download_bins():
+    # urls = ["ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/v1.8.0/server/bin/kubectl"]
+    # common.download_binaries(urls)
+
+    deploy.prep_binaries()
+
+
 def main():
-    test_config()
+    test_download_bins()
 
 
 if __name__ == '__main__':

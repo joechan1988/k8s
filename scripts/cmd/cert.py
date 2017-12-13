@@ -1,4 +1,3 @@
-
 import logging
 from templates import json_schema, constants
 from util import cert_tool
@@ -14,3 +13,6 @@ def generate_ca_cert(path):
     logging.info("---Generating CA Cert Files---")
     cert_tool.gen_ca_cert(ca_dir=path, debug=constants.debug)
 
+
+def generate_kubeconfig():
+    pass

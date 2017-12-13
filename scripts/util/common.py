@@ -4,7 +4,10 @@ import logging
 import subprocess
 import os
 import paramiko
+import uuid
+import urllib
 from string import Template
+from templates import constants
 
 import shutil
 
@@ -49,7 +52,7 @@ class RemoteShell(object):
 
         ret = self.execute("ls -l " + dir_name)
 
-        logging.info(ret)
+        logging.debug(ret)
 
         if "No such file" in ret[0]:
             self.execute("mkdir -p " + dir_name)
@@ -109,28 +112,6 @@ def copy_remote(local_path, remote_path, ip='', user='', password=''):
     pass
 
 
-    #
-    # if debug != "1":
-    #     if not output:
-    #         subprocess.call(cmd,stdout=open(os.devnull, 'w'),\
-    #                     stderr=subprocess.STDOUT,shell=shell)
-    #     else:
-    #         try:
-    #             return subprocess.check_output(cmd,shell=shell)
-    #         except subprocess.CalledProcessError as ex:
-    #             return "failed"
-    #
-    #
-    # else:
-    #     if not output:
-    #         subprocess.call(cmd,shell=shell)
-    #     else:
-    #         try:
-    #             return subprocess.check_output(cmd,shell=shell)
-    #         except subprocess.CalledProcessError as ex:
-    #             return "failed"
-
-
 def check_binaries(path, bin_name):
     # sys_path_str = os.environ["PATH"]
     # sys_path = sys_path_str.split(':')
@@ -143,6 +124,27 @@ def check_binaries(path, bin_name):
         return bin_path
 
     return None
+
+
+def download_binaries(urls):
+    dir_name = str(uuid.uuid1())
+
+    tmp_dir = "/tmp/" + dir_name + "/"
+
+    prep_conf_dir(tmp_dir, '')
+
+    for url in urls:
+        file_name = url.split("/")[-1]
+        file_tmp_path = tmp_dir + file_name
+        dl_cmd = 'curl -o ' + file_tmp_path + ' -C - ' + url
+        ch_cmd = 'chmod +x ' + file_tmp_path
+        mv_cmd = 'mv -f ' + file_tmp_path + ' /usr/bin/'
+
+        shell_exec(dl_cmd, shell=True, debug=constants.debug)
+        shell_exec(ch_cmd, shell=True, debug=constants.debug)
+        shell_exec(mv_cmd, shell=True, debug=constants.debug)
+
+    shell_exec('rm -rf '+tmp_dir,shell=True)
 
 
 def check_preinstalled_binaries(bin_name):

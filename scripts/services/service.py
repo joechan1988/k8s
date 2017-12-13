@@ -25,13 +25,15 @@ class Service(object):
             rsh = RemoteShell(ip, user, password)
             rsh.connect()
 
+            rsh.execute("systemctl daemon-reload")
             output = rsh.execute("systemctl restart "+self.service_name)
             logging.info(output)
+            rsh.close()
 
             if output and "failed" in output[0]:
                 return False
             else:
                 return True
 
-            rsh.close()
+
 

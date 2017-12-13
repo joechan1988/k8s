@@ -14,6 +14,7 @@ tmp_dir = constants.tmp_etcd_dir
 
 class Etcd(Service):
     def __init__(self):
+        super(Etcd,self).__init__()
         self.cluster_type = ''
         self.service_name = 'etcd'
 
