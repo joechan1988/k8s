@@ -88,6 +88,7 @@ class Etcd(Service):
                 rsh.connect()
 
                 logging.info("Copy Etcd Config Files To Node: " + name)
+                rsh.copy(tmp_dir+"etcd","/usr/bin/")
                 rsh.copy(tmp_dir + "etcd.service", "/etc/systemd/system/")
                 rsh.copy(tmp_dir + "ca.pem", self.cafile)
                 rsh.copy(tmp_dir + "etcd.pem", self.certfile)

@@ -6,6 +6,7 @@ from util import common
 from cmd import cert, deploy
 from services.etcd import Etcd
 from services.apiserver import Apiserver
+from services.kubelet import Kubelet
 from templates import constants
 import logging
 
@@ -89,8 +90,19 @@ def test_download_bins():
     deploy.prep_binaries()
 
 
+def test_kubelet():
+    configs = config_parser.Config("./cluster.yml")
+    configs.load()
+    kubelet = Kubelet()
+    kubelet.configure(**configs.data)
+
+    kubelet.deploy()
+    ret = kubelet.start()
+    print(ret)
+
+
 def main():
-    test_download_bins()
+    test_kubelet()
 
 
 if __name__ == '__main__':

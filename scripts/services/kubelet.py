@@ -19,6 +19,7 @@ class Kubelet(Service):
 
         self.cluster_dns_svc_ip = k8s_data.get("cluster_dns_svc_ip")
         self.cluster_dns_domain = k8s_data.get("cluster_dns_domain")
+        self.cni_plugin = cluster_data.get("cni").get("plugin")
 
         nodes = cluster_data.get('nodes')
         for node in nodes:
@@ -27,24 +28,39 @@ class Kubelet(Service):
 
     def deploy(self):
 
+        cni_enabled = False
+
+        if self.cni_plugin in ["calico"]:
+            network_cni = True
+
         for node in self.nodes:
             ip = node.get('external_IP')
             user = node.get('ssh_user')
             password = node.get("ssh_password")
             name = node.get("hostname")
 
-            common.render(os.path.join(constants.template_dir, "kubelet.service"),
-                          os.path.join(tmp_dir, "kubelet.service"),
-                          node_ip=ip,
-                          cluster_dns_svc_ip=self.cluster_dns_svc_ip,
-                          cluster_dns_domain=self.cluster_dns_domain)
+            if cni_enabled:
+                common.render(os.path.join(constants.template_dir, "kubelet.service"),
+                              os.path.join(tmp_dir, "kubelet.service"),
+                              node_ip=ip,
+                              cluster_dns_svc_ip=self.cluster_dns_svc_ip,
+                              cluster_dns_domain=self.cluster_dns_domain,
+                              cni="--network-plugin=cni")
+            else:
+                common.render(os.path.join(constants.template_dir, "kubelet.service"),
+                              os.path.join(tmp_dir, "kubelet.service"),
+                              node_ip=ip,
+                              cluster_dns_svc_ip=self.cluster_dns_svc_ip,
+                              cluster_dns_domain=self.cluster_dns_domain,
+                              cni="")
 
             rsh = common.RemoteShell(ip, user, password)
             rsh.connect()
 
             logging.info("Copy kubelet Config Files To Node: " + name)
+            rsh.copy(tmp_dir+"kubelet","/usr/bin/")
             rsh.copy(tmp_dir + "kubelet.service", "/etc/systemd/system/")
-            rsh.copy(tmp_dir+"admin.kubeconfig","/etc/kubernetes/")
+            rsh.copy(tmp_dir + "admin.kubeconfig", "/etc/kubernetes/")
 
             rsh.prep_dir("/var/lib/kubelet/", clear=True)
             rsh.execute("systemctl enable kubelet")

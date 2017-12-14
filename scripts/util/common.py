@@ -126,7 +126,7 @@ def check_binaries(path, bin_name):
     return None
 
 
-def download_binaries(urls):
+def download_binaries(urls, local_path):
     dir_name = str(uuid.uuid1())
 
     tmp_dir = "/tmp/" + dir_name + "/"
@@ -138,13 +138,13 @@ def download_binaries(urls):
         file_tmp_path = tmp_dir + file_name
         dl_cmd = 'curl -o ' + file_tmp_path + ' -C - ' + url
         ch_cmd = 'chmod +x ' + file_tmp_path
-        mv_cmd = 'mv -f ' + file_tmp_path + ' /usr/bin/'
+        mv_cmd = 'mv -f ' + file_tmp_path + ' ' + local_path
 
         shell_exec(dl_cmd, shell=True, debug=constants.debug)
         shell_exec(ch_cmd, shell=True, debug=constants.debug)
         shell_exec(mv_cmd, shell=True, debug=constants.debug)
 
-    shell_exec('rm -rf '+tmp_dir,shell=True)
+    shell_exec('rm -rf ' + tmp_dir, shell=True)
 
 
 def check_preinstalled_binaries(bin_name):

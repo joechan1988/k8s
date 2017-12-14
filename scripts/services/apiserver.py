@@ -124,6 +124,7 @@ class Apiserver(Service):
             rsh.connect()
             rsh.prep_dir(k8s_ssl_dir, clear=True)
 
+            rsh.copy(tmp_dir+"kube-apiserver","/usr/bin/")
             rsh.copy(tmp_dir + "kube-apiserver.service", "/etc/systemd/system/")
             rsh.copy(tmp_dir + "ca.pem", self.ca_cert)
             rsh.copy(tmp_dir + "ca-key.pem", self.ca_key)

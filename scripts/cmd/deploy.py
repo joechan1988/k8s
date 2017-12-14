@@ -1,6 +1,7 @@
 import os
 from util import common, cert_tool, config_parser
 from templates import constants, json_schema
+from util.common import RemoteShell
 
 
 def prep_dir():
@@ -9,11 +10,58 @@ def prep_dir():
 
 
 def check_env(**cluster_data):
-    # TODO: Docker version check;
-    # TODO: Left-over directory check;
-    # TODO: IPV4 Forwarding sysctl conf check;
+    ret = dict({"result": "passed",
+                "node": "",
+                "hint": ""
+                })
 
-    pass
+    nodes = cluster_data.get("nodes")
+
+    docker_version_cmd = "docker version --format {{.Server.Version}}"
+    leftover_dirs_check_list = ["/var/lib/kubelet/",
+                                "/etc/kubernetes/"
+                                ]
+
+    for node in nodes:
+        ip = node.get('external_IP')
+        user = node.get('ssh_user')
+        password = node.get("ssh_password")
+        name = node.get("hostname")
+
+        ret["node"] = "Node IP: " + ip + "; Node Name: " + name
+
+        rsh = RemoteShell(ip, user, password)
+        rsh.connect()
+
+        # ---Docker Version Check ---
+        docker_version = rsh.execute(docker_version_cmd)
+        if "1.12" not in docker_version[0]:
+            ret["result"] = "failed"
+            ret["hint"] = "Incompatible Docker Version On Node: " + name + ", Node IP: " + ip + "; \n"
+
+        # ---Left-over Directories Check ---
+        leftover_dirs = list([])
+        leftover_dir_names = ""
+
+        for directory in leftover_dirs_check_list:
+            out = rsh.execute("ls -l " + directory)
+            if "No such file or directory" not in out[0] and "total 0" not in out[-1]:
+                leftover_dirs.append(directory)
+                leftover_dir_names = leftover_dir_names + directory + ", "
+
+        if len(leftover_dirs):
+            ret["result"] = "failed"
+            ret["hint"] = ret["hint"] + "Fount Unempty Directories: " + leftover_dir_names + "; "
+
+        # --- IPV4 Forwarding Check ---
+        ipv4_forward_check = rsh.execute("sysctl net.ipv4.conf.all.forwarding -b")
+        if ipv4_forward_check[0] != "1":
+            ret["result"] = "failed"
+            ret["hint"] = ret["hint"] + "IPV4 Forwarding Is Disabled; "
+
+        rsh.close()
+
+        return ret
 
 
 def generate_admin_kubeconfig():
@@ -28,7 +76,7 @@ def generate_admin_kubeconfig():
                              cert_name='admin',
                              dest_dir=tmp_k8s_dir, debug=constants.debug)
 
-    cmds = []
+    cmds = list([])
     cmds.append("kubectl config set-cluster kubernetes \
               --certificate-authority=" + tmp_k8s_dir + "ca.pem \
               --embed-certs=true \
@@ -58,9 +106,9 @@ def prep_binaries():
     bin_list = configs.data.get("binaries").get("list")
     urls = []
     for binary in bin_list:
-        urls.append(dl_path+binary)
+        urls.append(dl_path + binary)
 
-    common.download_binaries(urls)
+    common.download_binaries(urls, constants.tmp_k8s_dir)
 
 
 def run():
