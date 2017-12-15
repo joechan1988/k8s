@@ -10,6 +10,8 @@ from util import cert_tool
 from service import Service
 
 tmp_dir = constants.tmp_etcd_dir
+tmp_bin_dir =constants.tmp_bin_dir
+tmp_k8s_dir = constants.tmp_k8s_dir
 
 
 class Etcd(Service):
@@ -50,7 +52,7 @@ class Etcd(Service):
         cert_tool.generate_json_file(tmp_dir + "etcd-csr.json", csr_json)
 
         logging.info("Generating etcd Cert Files...")
-        cert_tool.gen_cert_files(ca_dir=tmp_dir, profile='kubernetes',
+        cert_tool.gen_cert_files(ca_dir=tmp_k8s_dir, profile='kubernetes',
                                  csr_file=tmp_dir + 'etcd-csr.json',
                                  cert_name='etcd',
                                  dest_dir=tmp_dir, debug=constants.debug)
@@ -88,9 +90,10 @@ class Etcd(Service):
                 rsh.connect()
 
                 logging.info("Copy Etcd Config Files To Node: " + name)
-                rsh.copy(tmp_dir+"etcd","/usr/bin/")
+                rsh.prep_dir("/etc/etcd/ssl/",clear=True)
+                rsh.copy(tmp_bin_dir+"etcd","/usr/bin/")
                 rsh.copy(tmp_dir + "etcd.service", "/etc/systemd/system/")
-                rsh.copy(tmp_dir + "ca.pem", self.cafile)
+                rsh.copy(tmp_k8s_dir + "ca.pem", self.cafile)
                 rsh.copy(tmp_dir + "etcd.pem", self.certfile)
                 rsh.copy(tmp_dir + "etcd-key.pem", self.keyfile)
 

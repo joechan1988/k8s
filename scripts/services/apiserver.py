@@ -7,6 +7,7 @@ from templates import constants
 
 tmp_dir = constants.tmp_k8s_dir
 k8s_ssl_dir = constants.k8s_ssl_dir
+tmp_bin_dir = constants.tmp_bin_dir
 
 
 #
@@ -19,6 +20,9 @@ class Apiserver(Service):
     def __init__(self):
         super(Apiserver, self).__init__()
         self.service_name = 'kube-apiserver'
+        self.node_ip = ""
+        self.host_name = ""
+        self.remote_shell = common.RemoteShell()
 
     def configure(self, **configs):
         k8s_configs = configs.get("kubernetes")
@@ -80,57 +84,58 @@ class Apiserver(Service):
 
     def deploy(self):
 
-        self._generate_cert()
+        # self._generate_cert()
 
-        for node in self.nodes:
-            ip = node.get('external_IP')
-            user = node.get('ssh_user')
-            password = node.get("ssh_password")
-            name = node.get("hostname")
+        # for node in self.nodes:
+        #     ip = node.get('external_IP')
+        #     user = node.get('ssh_user')
+        #     password = node.get("ssh_password")
+        #     name = node.get("hostname")
 
-            logging.info("Starting To Deploy Apiserver On Node: %s, IP address: %s ", name, ip)
+        logging.info("Starting To Deploy Apiserver On Node: %s, IP address: %s ", self.host_name, self.node_ip)
 
-            if self.etcd_ssl == 'yes':
-                common.render(os.path.join(constants.template_dir, "kube-apiserver.service"),
-                              os.path.join(tmp_dir, "kube-apiserver.service"),
-                              node_ip=ip,
-                              etcd_endpoints=self.etcd_endpoints,
-                              etcd_cafile=self.etcd_cafile,
-                              etcd_keyfile=self.etcd_keyfile,
-                              etcd_certfile=self.etcd_certfile,
-                              service_cidr=self.service_cidr,
-                              node_port_range=self.node_port_range,
-                              )
-            else:
-                common.render(os.path.join(constants.template_dir, "kube-apiserver.service"),
-                              os.path.join(tmp_dir, "kube-apiserver.service"),
-                              etcd_endpoints=self.etcd_endpoints,
-                              etcd_cafile="",
-                              etcd_keyfile="",
-                              etcd_certfile="",
-                              node_ip=ip,
-                              service_cidr=self.service_cidr,
-                              node_port_range=self.node_port_range,
-                              )
+        if self.etcd_ssl == 'yes':
+            common.render(os.path.join(constants.template_dir, "kube-apiserver.service"),
+                          os.path.join(tmp_dir, "kube-apiserver.service"),
+                          node_ip=self.node_ip,
+                          etcd_endpoints=self.etcd_endpoints,
+                          etcd_cafile=self.etcd_cafile,
+                          etcd_keyfile=self.etcd_keyfile,
+                          etcd_certfile=self.etcd_certfile,
+                          service_cidr=self.service_cidr,
+                          node_port_range=self.node_port_range,
+                          )
+        else:
+            common.render(os.path.join(constants.template_dir, "kube-apiserver.service"),
+                          os.path.join(tmp_dir, "kube-apiserver.service"),
+                          etcd_endpoints=self.etcd_endpoints,
+                          etcd_cafile="",
+                          etcd_keyfile="",
+                          etcd_certfile="",
+                          node_ip=self.node_ip,
+                          service_cidr=self.service_cidr,
+                          node_port_range=self.node_port_range,
+                          )
 
-            token = self._generate_bootstrap_token()
+        # token = self._generate_bootstrap_token()
+        #
+        # common.render(os.path.join(constants.template_dir, "token.csv"),
+        #               os.path.join(tmp_dir, "token.csv"),
+        #               bootstrap_token=token)
 
-            common.render(os.path.join(constants.template_dir, "token.csv"),
-                          os.path.join(tmp_dir, "token.csv"),
-                          bootstrap_token=token)
+        logging.info("Copy kube-apiserver Config Files To Node: " + self.host_name)
+        # rsh = common.RemoteShell(ip, user, password)
+        rsh = self.remote_shell
+        rsh.prep_dir(k8s_ssl_dir, clear=True)
 
-            logging.info("Copy kube-apiserver Config Files To Node: " + name)
-            rsh = common.RemoteShell(ip, user, password)
-            rsh.connect()
-            rsh.prep_dir(k8s_ssl_dir, clear=True)
+        rsh.copy(tmp_bin_dir + "kube-apiserver", "/usr/bin/")
+        rsh.copy(tmp_dir + "kube-apiserver.service", "/etc/systemd/system/")
+        rsh.copy(tmp_dir + "token.csv", "/etc/kubernetes/")
+        rsh.copy(tmp_dir + "ca.pem", self.ca_cert)
+        rsh.copy(tmp_dir + "ca-key.pem", self.ca_key)
+        rsh.copy(tmp_dir + "kubernetes.pem", self.k8s_cert)
+        rsh.copy(tmp_dir + "kubernetes-key.pem", self.k8s_key)
 
-            rsh.copy(tmp_dir+"kube-apiserver","/usr/bin/")
-            rsh.copy(tmp_dir + "kube-apiserver.service", "/etc/systemd/system/")
-            rsh.copy(tmp_dir + "ca.pem", self.ca_cert)
-            rsh.copy(tmp_dir + "ca-key.pem", self.ca_key)
-            rsh.copy(tmp_dir + "kubernetes.pem", self.k8s_cert)
-            rsh.copy(tmp_dir + "kubernetes-key.pem", self.k8s_key)
+        rsh.execute("systemctl enable kube-apiserver")
 
-            rsh.execute("systemctl enable kube-apiserver")
-
-            rsh.close()
+            # rsh.close()

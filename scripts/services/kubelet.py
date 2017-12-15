@@ -7,6 +7,7 @@ from templates import constants
 
 tmp_dir = constants.tmp_k8s_dir
 k8s_ssl_dir = constants.k8s_ssl_dir
+tmp_bin_dir = constants.tmp_bin_dir
 
 
 class Kubelet(Service):
@@ -58,7 +59,7 @@ class Kubelet(Service):
             rsh.connect()
 
             logging.info("Copy kubelet Config Files To Node: " + name)
-            rsh.copy(tmp_dir+"kubelet","/usr/bin/")
+            rsh.copy(tmp_bin_dir+"kubelet","/usr/bin/")
             rsh.copy(tmp_dir + "kubelet.service", "/etc/systemd/system/")
             rsh.copy(tmp_dir + "admin.kubeconfig", "/etc/kubernetes/")
 

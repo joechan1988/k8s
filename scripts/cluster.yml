@@ -1,6 +1,7 @@
 debug: False
 
 FQDN: "k8s.wocloud.org"
+external_VIP: "1.1.1.1"  # IP for external access to cluster; should be either a load-balancer IP or a keepalived VIP
 
 nodes:
 #  - hostname: k8s-master1
@@ -46,3 +47,13 @@ binaries:
     - "kube-apiserver"
     - "kubectl"
     - "kubelet"
+    - "kube-controller-manager"
+    - "etcd"
+    - "etcdctl"
+    - "flanneld"
+    - "kube-scheduler"
+    - "kube-proxy"
+    - "mk-docker-opts.sh"
+
+images:
+  path: ""

@@ -361,7 +361,7 @@ def config_proxy():
     render(os.path.join(template_dir, "kube-proxy.service"),
            os.path.join(systemd_dir, "kube-proxy.service"),
            node_ip=node_ip,
-           service_cidr=configs.service_cidr,
+           cluster_cidr=configs.cluster_cidr,
            )
 
 

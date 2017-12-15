@@ -9,7 +9,7 @@ def prep_dir():
     common.prep_conf_dir(constants.tmp_k8s_dir, '', clear=True)
 
 
-def check_env(**cluster_data):
+def pre_check(cluster_data, rsh=RemoteShell()):
     ret = dict({"result": "passed",
                 "node": "",
                 "hint": ""
@@ -30,8 +30,14 @@ def check_env(**cluster_data):
 
         ret["node"] = "Node IP: " + ip + "; Node Name: " + name
 
+        # TODO: SSH Connection Reachability Check
+
         rsh = RemoteShell(ip, user, password)
-        rsh.connect()
+
+        if rsh.connect()==False:
+            ret["result"] = "failed"
+            ret["hint"] = "Node {"+name+"}, IP: "+ip+" is NOT Reachable, Check SSH Connectivity"
+            continue
 
         # ---Docker Version Check ---
         docker_version = rsh.execute(docker_version_cmd)
@@ -59,12 +65,26 @@ def check_env(**cluster_data):
             ret["result"] = "failed"
             ret["hint"] = ret["hint"] + "IPV4 Forwarding Is Disabled; "
 
+        # TODO: Essential module check: systemctl, nslookup ...
+
         rsh.close()
 
         return ret
 
 
-def generate_admin_kubeconfig():
+def generate_admin_kubeconfig(**cluster_data):
+
+    # TODO: admin.kubeconfig server should be LB address by default.Set to 1st control node ip
+
+    nodes = cluster_data.get("nodes")
+    control_nodes = list([])
+    for node in nodes:
+        if 'control' in node.get('role'):
+            control_nodes.append(node)
+
+    control_node_ip = control_nodes[0].get("external_IP")
+    server_url = "https://"+control_node_ip+":6443"
+
     # generate admin cert files
     admin_json = json_schema.k8s_admin_csr
     tmp_k8s_dir = constants.tmp_k8s_dir
@@ -80,7 +100,7 @@ def generate_admin_kubeconfig():
     cmds.append("kubectl config set-cluster kubernetes \
               --certificate-authority=" + tmp_k8s_dir + "ca.pem \
               --embed-certs=true \
-              --server=$1")
+              --server="+server_url)
 
     cmds.append("kubectl config set-credentials admin \
               --client-certificate=" + tmp_k8s_dir + "admin.pem \
@@ -100,7 +120,7 @@ def generate_admin_kubeconfig():
 
 
 def prep_binaries():
-    configs = config_parser.Config("./cluster.yml")
+    configs = config_parser.Config(constants.cluster_cfg_path)
     configs.load()
     dl_path = configs.data.get("binaries").get("download_url")
     bin_list = configs.data.get("binaries").get("list")
@@ -108,12 +128,15 @@ def prep_binaries():
     for binary in bin_list:
         urls.append(dl_path + binary)
 
-    common.download_binaries(urls, constants.tmp_k8s_dir)
+    common.download_binaries(urls, constants.tmp_bin_dir)
 
 
 def run():
+
+    # TODO: precheck
     # TODO: Generate CA cert
     # TODO: Generate admin kubeconfig file
-    # TODO:
+    # TODO: Generate Bootstrap Token
+    # TODO: prep_binaries()
 
     pass

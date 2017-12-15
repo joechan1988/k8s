@@ -27,9 +27,16 @@ class RemoteShell(object):
 
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(self.ip, 22,
-                    self.user,
-                    self.password)
+        # ssh.connect(self.ip, 22,
+        #                 self.user,
+        #                 self.password)
+        try:
+            ssh.connect(self.ip, 22,
+                        self.user,
+                        self.password)
+        except:
+            logging.error("Unable to connect %s", self.ip)
+            return False
 
         self.instance = ssh
 
@@ -126,7 +133,7 @@ def check_binaries(path, bin_name):
     return None
 
 
-def download_binaries(urls, local_path):
+def download_binaries(urls, local_path="", default_path="/usr/bin/"):
     dir_name = str(uuid.uuid1())
 
     tmp_dir = "/tmp/" + dir_name + "/"
@@ -138,7 +145,11 @@ def download_binaries(urls, local_path):
         file_tmp_path = tmp_dir + file_name
         dl_cmd = 'curl -o ' + file_tmp_path + ' -C - ' + url
         ch_cmd = 'chmod +x ' + file_tmp_path
-        mv_cmd = 'mv -f ' + file_tmp_path + ' ' + local_path
+
+        if local_path != "":
+            mv_cmd = 'mv -f ' + file_tmp_path + ' ' + local_path
+        else:
+            mv_cmd = 'mv -f ' + file_tmp_path + ' ' + default_path
 
         shell_exec(dl_cmd, shell=True, debug=constants.debug)
         shell_exec(ch_cmd, shell=True, debug=constants.debug)

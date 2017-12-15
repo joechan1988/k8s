@@ -3,7 +3,7 @@
 
 from util import config_parser
 from util import common
-from cmd import cert, deploy
+from cmd import auth, deploy
 from services.etcd import Etcd
 from services.apiserver import Apiserver
 from services.kubelet import Kubelet
@@ -52,7 +52,7 @@ def test_deploy_etcd():
     configs.load()
 
     deploy.prep_dir()
-    cert.generate_ca_cert(constants.tmp_etcd_dir)
+    auth.generate_ca_cert(constants.tmp_etcd_dir)
 
     etcd = Etcd()
     etcd.configure(**configs.data)
@@ -68,7 +68,7 @@ def test_deploy_apiserver():
     configs.load()
 
     deploy.prep_dir()
-    cert.generate_ca_cert(constants.tmp_k8s_dir)
+    auth.generate_ca_cert(constants.tmp_k8s_dir)
 
     apiserver = Apiserver()
     apiserver.configure(**configs.data)
