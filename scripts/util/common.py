@@ -189,7 +189,7 @@ def render(src, dest, **kw):
         os.mknod(dest)
     with open(dest, 'w') as f:
         f.write(t.substitute(**kw))
-    print("Generated configuration file: %s" % dest)
+    logging.info("Generated configuration file: %s" % dest)
 
 
 def prep_conf_dir(root, name, clear=False):
@@ -219,3 +219,23 @@ def prep_dir_remote(root, name, clear=False, ip='', user='', password=''):
         rsh.execute("rm -rf " + absolute_path + "/*")
 
     rsh.close()
+
+
+def arg(*args, **kwargs):
+    """
+    Decorator for CLI args.
+
+    :param args:
+    :param kwargs:
+    :return:
+    """
+
+    def _decorator(func):
+        if not hasattr(func, 'arguments'):
+            func.arguments = []
+        if (args, kwargs) not in func.arguments:
+            func.arguments.insert(0, (args, kwargs))
+
+        return func
+
+    return _decorator

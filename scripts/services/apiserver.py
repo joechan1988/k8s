@@ -22,6 +22,7 @@ class Apiserver(Service):
         self.service_name = 'kube-apiserver'
         self.node_ip = ""
         self.host_name = ""
+        self.tmp_cert_path = tmp_dir
         self.remote_shell = common.RemoteShell()
 
     def configure(self, **configs):
@@ -41,12 +42,12 @@ class Apiserver(Service):
         self.ca_key = k8s_ssl_dir + "ca-key.pem"
         self.k8s_cert = k8s_ssl_dir + "kubernetes.pem"
         self.k8s_key = k8s_ssl_dir + "kubernetes-key.pem"
-
-        nodes = configs.get('nodes')
-
-        for node in nodes:
-            if 'control' in node.get('role'):
-                self.nodes.append(node)
+        #
+        # nodes = configs.get('nodes')
+        #
+        # for node in nodes:
+        #     if 'control' in node.get('role'):
+        #         self.nodes.append(node)
 
     def _generate_cert(self):
 
@@ -75,22 +76,14 @@ class Apiserver(Service):
                                  cert_name='kubernetes',
                                  dest_dir=tmp_dir, debug=constants.debug)
 
-    @staticmethod
-    def _generate_bootstrap_token():
+    # @staticmethod
+    # def _generate_bootstrap_token():
+    #
+    #     cmd = "head -c 16 /dev/urandom | od -An -t x | tr -d ' '"
+    #     ret = common.shell_exec(cmd, shell=True, debug=constants.debug, output=True)
+    #     return ret.replace("\n", "")
 
-        cmd = "head -c 16 /dev/urandom | od -An -t x | tr -d ' '"
-        ret = common.shell_exec(cmd, shell=True, debug=constants.debug, output=True)
-        return ret.replace("\n", "")
-
-    def deploy(self):
-
-        # self._generate_cert()
-
-        # for node in self.nodes:
-        #     ip = node.get('external_IP')
-        #     user = node.get('ssh_user')
-        #     password = node.get("ssh_password")
-        #     name = node.get("hostname")
+    def _deploy_service(self):
 
         logging.info("Starting To Deploy Apiserver On Node: %s, IP address: %s ", self.host_name, self.node_ip)
 
@@ -130,12 +123,12 @@ class Apiserver(Service):
 
         rsh.copy(tmp_bin_dir + "kube-apiserver", "/usr/bin/")
         rsh.copy(tmp_dir + "kube-apiserver.service", "/etc/systemd/system/")
-        rsh.copy(tmp_dir + "token.csv", "/etc/kubernetes/")
-        rsh.copy(tmp_dir + "ca.pem", self.ca_cert)
-        rsh.copy(tmp_dir + "ca-key.pem", self.ca_key)
-        rsh.copy(tmp_dir + "kubernetes.pem", self.k8s_cert)
-        rsh.copy(tmp_dir + "kubernetes-key.pem", self.k8s_key)
+        rsh.copy(self.tmp_cert_path + "token.csv", "/etc/kubernetes/")
+        rsh.copy(self.tmp_cert_path + "ca.pem", self.ca_cert)
+        rsh.copy(self.tmp_cert_path + "ca-key.pem", self.ca_key)
+        rsh.copy(self.tmp_cert_path + "kubernetes.pem", self.k8s_cert)
+        rsh.copy(self.tmp_cert_path + "kubernetes-key.pem", self.k8s_key)
 
         rsh.execute("systemctl enable kube-apiserver")
 
-            # rsh.close()
+        # rsh.close()

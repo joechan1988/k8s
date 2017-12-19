@@ -16,36 +16,37 @@ class Scheduler(Service):
         self.service_name = "kube-scheduler"
 
     def configure(self, **cluster_data):
+        #
+        # nodes = cluster_data.get('nodes')
+        #
+        # for node in nodes:
+        #     if 'control' in node.get('role'):
+        #         self.nodes.append(node)
+        pass
 
-        nodes = cluster_data.get('nodes')
+    def _deploy_service(self):
+        #
+        # for node in self.nodes:
+        #     ip = node.get('external_IP')
+        #     user = node.get('ssh_user')
+        #     password = node.get("ssh_password")
+        #     name = node.get("hostname")
 
-        for node in nodes:
-            if 'control' in node.get('role'):
-                self.nodes.append(node)
+        logging.info("Starting To Deploy Scheduler On Node: %s, IP address: %s ", self.host_name, self.node_ip)
 
-    def deploy(self):
+        common.render(os.path.join(constants.template_dir, "kube-scheduler.service"),
+                      os.path.join(tmp_dir, "kube-scheduler.service"),
+                      node_ip=self.node_ip,
+                      )
 
-        for node in self.nodes:
-            ip = node.get('external_IP')
-            user = node.get('ssh_user')
-            password = node.get("ssh_password")
-            name = node.get("hostname")
+        logging.info("Copy kube-scheduler Config Files To Node: " + self.host_name)
 
-            logging.info("Starting To Deploy Scheduler On Node: %s, IP address: %s ", name, ip)
+        rsh = self.remote_shell
+        # rsh.connect()
 
-            common.render(os.path.join(constants.template_dir, "kube-scheduler.service"),
-                          os.path.join(tmp_dir, "kube-scheduler.service"),
-                          node_ip=ip,
-                          )
+        rsh.copy(tmp_bin_dir + "kube-scheduler", "/usr/bin/")
+        rsh.copy(tmp_dir + "kube-scheduler.service", "/etc/systemd/system/")
 
-            logging.info("Copy kube-scheduler Config Files To Node: " + name)
+        rsh.execute("systemctl enable kube-scheduler")
 
-            rsh = common.RemoteShell(ip, user, password)
-            rsh.connect()
-
-            rsh.copy(tmp_bin_dir + "kube-scheduler", "/usr/bin/")
-            rsh.copy(tmp_dir + "kube-scheduler.service", "/etc/systemd/system/")
-
-            rsh.execute("systemctl enable kube-scheduler")
-
-            rsh.close()
+        # rsh.close()

@@ -1,15 +1,48 @@
 import os
+import logging
+import auth
 from util import common, cert_tool, config_parser
 from templates import constants, json_schema
 from util.common import RemoteShell
+from util.exception import (PreCheckError, ClusterConfigError, BaseError)
+from services import *
+
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+                    datefmt='%a, %d %b %Y %H:%M:%S',
+                    )
 
 
-def prep_dir():
-    common.prep_conf_dir(constants.tmp_etcd_dir, '', clear=True)
-    common.prep_conf_dir(constants.tmp_k8s_dir, '', clear=True)
+def validate_cluster_data(cluster_data):
+    """
+    Constraints:
+    1. control node shouldn't be either labeled as worker node
+
+    :param cluster_data:
+    :return:
+    """
+
+    # Node Role Check:
+
+    for node in cluster_data.get("nodes"):
+        role = node.get('role')
+        name = node.get('hostname')
+        ip = node.get('external_IP')
+        if 'control' in role and 'worker' in role:
+            raise ClusterConfigError("Node {0}, IP:{1} is labeled as control and worker at the same time".format(name,ip))
 
 
 def pre_check(cluster_data, rsh=RemoteShell()):
+    """
+    Environment check before starting deployment procedure.
+
+    :param cluster_data:  cluster.yml data
+    :param rsh:  Remote Shell Obj to connect ssh to node
+    :return: result dict
+                result:  "passed" or "failed"
+                hint: detailed message
+    """
+
     ret = dict({"result": "passed",
                 "node": "",
                 "hint": ""
@@ -30,13 +63,13 @@ def pre_check(cluster_data, rsh=RemoteShell()):
 
         ret["node"] = "Node IP: " + ip + "; Node Name: " + name
 
-        # TODO: SSH Connection Reachability Check
+        # SSH Connection Reachability Check
 
         rsh = RemoteShell(ip, user, password)
 
-        if rsh.connect()==False:
+        if rsh.connect() == False:
             ret["result"] = "failed"
-            ret["hint"] = "Node {"+name+"}, IP: "+ip+" is NOT Reachable, Check SSH Connectivity"
+            ret["hint"] = "Node {" + name + "}, IP: " + ip + " is NOT Reachable, Check SSH Connectivity"
             continue
 
         # ---Docker Version Check ---
@@ -72,54 +105,14 @@ def pre_check(cluster_data, rsh=RemoteShell()):
         return ret
 
 
-def generate_admin_kubeconfig(**cluster_data):
+def prep_binaries(path):
+    """
+    Prepare binaries for local start.
+    Could be rpm-installed or ftp downloaded.
+    For ftp instance, ftp address and list of binaries should be defined in cluster.yml
+    :return:
+    """
 
-    # TODO: admin.kubeconfig server should be LB address by default.Set to 1st control node ip
-
-    nodes = cluster_data.get("nodes")
-    control_nodes = list([])
-    for node in nodes:
-        if 'control' in node.get('role'):
-            control_nodes.append(node)
-
-    control_node_ip = control_nodes[0].get("external_IP")
-    server_url = "https://"+control_node_ip+":6443"
-
-    # generate admin cert files
-    admin_json = json_schema.k8s_admin_csr
-    tmp_k8s_dir = constants.tmp_k8s_dir
-    csr_file_path = constants.tmp_k8s_dir + "admin-csr.json"
-
-    cert_tool.generate_json_file(csr_file_path, admin_json)
-    cert_tool.gen_cert_files(ca_dir=tmp_k8s_dir, profile='kubernetes',
-                             csr_file=tmp_k8s_dir + 'admin-csr.json',
-                             cert_name='admin',
-                             dest_dir=tmp_k8s_dir, debug=constants.debug)
-
-    cmds = list([])
-    cmds.append("kubectl config set-cluster kubernetes \
-              --certificate-authority=" + tmp_k8s_dir + "ca.pem \
-              --embed-certs=true \
-              --server="+server_url)
-
-    cmds.append("kubectl config set-credentials admin \
-              --client-certificate=" + tmp_k8s_dir + "admin.pem \
-              --embed-certs=true \
-              --client-key=" + tmp_k8s_dir + "admin-key.pem")
-
-    cmds.append("kubectl config set-context kubernetes \
-              --cluster=kubernetes \
-              --user=admin")
-
-    cmds.append("kubectl config use-context kubernetes")
-
-    cmds.append("cp -f /root/.kube/config " + tmp_k8s_dir + "admin.kubeconfig")
-
-    for cmd in cmds:
-        common.shell_exec(cmd, shell=True, debug=constants.debug)
-
-
-def prep_binaries():
     configs = config_parser.Config(constants.cluster_cfg_path)
     configs.load()
     dl_path = configs.data.get("binaries").get("download_url")
@@ -128,15 +121,90 @@ def prep_binaries():
     for binary in bin_list:
         urls.append(dl_path + binary)
 
-    common.download_binaries(urls, constants.tmp_bin_dir)
+    common.download_binaries(urls, path)
 
 
-def run():
+def deploy(cluster_data=dict()):
+    # cluster_cfg_path = constants.cluster_cfg_path
+    # configs = config_parser.Config(cluster_cfg_path)
+    # configs.load()
+    # cluster_data = configs.data
 
-    # TODO: precheck
-    # TODO: Generate CA cert
-    # TODO: Generate admin kubeconfig file
-    # TODO: Generate Bootstrap Token
-    # TODO: prep_binaries()
+    nodes = cluster_data.get("nodes")
 
-    pass
+    # prepare temp dir
+
+    cert_tmp_path = constants.tmp_k8s_dir
+    bin_tmp_path = constants.tmp_bin_dir
+
+    common.prep_conf_dir(cert_tmp_path, "", clear=True)
+    common.prep_conf_dir(bin_tmp_path, "", clear=True)
+
+    #  Generate CA cert to temp directory
+    auth.generate_ca_cert(cert_tmp_path)
+
+    # Generate Bootstrap Token to temp directory
+    auth.generate_bootstrap_token(cert_tmp_path)
+
+    # prep_binaries() to temp directory
+
+    prep_binaries(bin_tmp_path)
+
+    # Generate k8s & etcd cert files to temp directory
+
+    auth.generate_etcd_cert(cert_tmp_path, cluster_data)
+    auth.generate_apiserver_cert(cert_tmp_path, cluster_data)
+    auth.generate_admin_kubeconfig(cluster_data)
+
+    # Start deployment process:
+
+    docker = Docker()
+    apiserver = Apiserver()
+    cmanager = CManager()
+    scheduler = Scheduler()
+    proxy = Proxy()
+    etcd = Etcd()
+    kubelet = Kubelet()
+
+    for node in nodes:
+        ip = node.get('external_IP')
+        user = node.get('ssh_user')
+        password = node.get("ssh_password")
+        name = node.get("hostname")
+
+        rsh = RemoteShell(ip, user, password)
+        rsh.connect()
+
+        # Executing Node Pre-Check
+        precheck_result = pre_check(cluster_data, rsh)
+
+        if precheck_result["result"] == "failed":
+            raise PreCheckError(precheck_result["hint"])
+
+        if 'etcd' in node.get("role"):
+            etcd.remote_shell = rsh
+            etcd.node_ip = ip
+            etcd.host_name = name
+            etcd.tmp_cert_path = cert_tmp_path
+            etcd.configure(**cluster_data)
+            etcd.deploy()
+
+            etcd.start()
+
+        if 'control' in node.get('role'):
+            for service in [docker, apiserver, cmanager, scheduler, kubelet, proxy]:
+                service.remote_shell = rsh
+                service.node_ip = ip
+                service.host_name = name
+                service.configure(**cluster_data)
+                service.deploy()
+                service.start()
+
+        if 'worker' in node.get('role'):
+            for service in [docker, kubelet, proxy]:
+                service.remote_shell = rsh
+                service.node_ip = ip
+                service.host_name = name
+                service.configure(**cluster_data)
+                service.deploy()
+                service.start()

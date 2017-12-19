@@ -14,9 +14,22 @@ class Docker(Service):
         super(Docker, self).__init__()
         self.service_name = "docker"
 
-    def configure(self):
-        pass
+    def configure(self,**cluster_data):
+        self.cni_plugin = cluster_data.get("cni").get("plugin")
 
-    def deploy(self):
-        common.render(os.path.join(constants.template_dir, "docker.service"),
-                      os.path.join(tmp_dir, "docker.service"))
+    def _deploy_service(self):
+
+        if self.cni_plugin == "flannel":
+            flannel_env_file = "EnvironmentFile=-/run/flannel/docker"
+            common.render(os.path.join(constants.template_dir, "docker.service"),
+                          os.path.join(tmp_dir, "docker.service"),
+                          flannel_env_file=flannel_env_file)
+
+        else:
+            common.render(os.path.join(constants.template_dir, "docker.service"),
+                          os.path.join(tmp_dir, "docker.service"),
+                          flannel_env_file="")
+
+        rsh = self.remote_shell
+        rsh.copy(tmp_dir + "docker.service", "/etc/systemd/system/")
+        rsh.execute("systemctl enable docker")

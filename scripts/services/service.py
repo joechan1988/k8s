@@ -5,9 +5,19 @@ from util.common import RemoteShell
 class Service(object):
     def __init__(self):
         self.service_name = ''
-        self.nodes=[]
+        self.node_ip = ''
+        self.host_name = ''
+        self.remote_shell = RemoteShell()
 
     def deploy(self):
+
+        logging.info("Deploying Service: " + self.service_name + " On Node: " + self.host_name)
+
+        self._deploy_service()
+
+        logging.info("Finished Deploying Service: " + self.service_name + " On Node: " + self.host_name)
+
+    def _deploy_service(self):
         pass
 
     def configure(self):
@@ -15,25 +25,24 @@ class Service(object):
 
     def start(self):
 
-        for node in self.nodes:
-            ip = node.get('external_IP')
-            user = node.get('ssh_user')
-            password = node.get("ssh_password")
-            name = node.get("hostname")
+        logging.info("Starting " + self.service_name + " Service On Node: " + self.host_name)
+        rsh = self.remote_shell
+        # rsh.connect()
 
-            logging.info("Starting "+self.service_name+" Service On Node: "+name)
-            rsh = RemoteShell(ip, user, password)
-            rsh.connect()
+        rsh.execute("systemctl daemon-reload")
+        output = rsh.execute("systemctl restart " + self.service_name)
+        logging.info(output)
+        # rsh.close()
 
-            rsh.execute("systemctl daemon-reload")
-            output = rsh.execute("systemctl restart "+self.service_name)
-            logging.info(output)
-            rsh.close()
+        if output and "failed" in output[0]:
+            logging.critical("Failed To Start Service: " + self.service_name + " On Node: " + self.host_name)
+            return False
+        else:
+            logging.critical("Finished Starting Service: " + self.service_name + " On Node: " + self.host_name)
+            return True
 
-            if output and "failed" in output[0]:
-                return False
-            else:
-                return True
+    def stop(self):
+        logging.info("Stopping " + self.service_name + " Service On Node: " + self.host_name)
+        rsh = self.remote_shell
 
-
-
+        rsh.execute("systemctl stop " + self.service_name)
