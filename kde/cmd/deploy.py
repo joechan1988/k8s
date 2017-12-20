@@ -1,11 +1,11 @@
 import os
 import logging
 import auth
-from util import common, cert_tool, config_parser
-from templates import constants, json_schema
-from util.common import RemoteShell
-from util.exception import (PreCheckError, ClusterConfigError, BaseError)
-from services import *
+from kde.util import common, cert_tool, config_parser
+from kde.templates import constants, json_schema
+from kde.util.common import RemoteShell
+from kde.util.exception import (PreCheckError, ClusterConfigError, BaseError)
+from kde.services import *
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
@@ -29,7 +29,8 @@ def validate_cluster_data(cluster_data):
         name = node.get('hostname')
         ip = node.get('external_IP')
         if 'control' in role and 'worker' in role:
-            raise ClusterConfigError("Node {0}, IP:{1} is labeled as control and worker at the same time".format(name,ip))
+            raise ClusterConfigError(
+                "Node {0}, IP:{1} is labeled as control and worker at the same time".format(name, ip))
 
 
 def pre_check(cluster_data, rsh=RemoteShell()):
@@ -124,7 +125,7 @@ def prep_binaries(path):
     common.download_binaries(urls, path)
 
 
-def deploy(cluster_data=dict()):
+def do(cluster_data):
     # cluster_cfg_path = constants.cluster_cfg_path
     # configs = config_parser.Config(cluster_cfg_path)
     # configs.load()
@@ -208,3 +209,12 @@ def deploy(cluster_data=dict()):
                 service.configure(**cluster_data)
                 service.deploy()
                 service.start()
+
+
+def join():
+    """
+    Join a existing kubernetes cluster
+
+    :return:
+    """
+    pass

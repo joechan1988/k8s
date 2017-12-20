@@ -1,5 +1,5 @@
 import logging
-from util.common import RemoteShell
+from kde.util.common import RemoteShell
 
 
 class Service(object):

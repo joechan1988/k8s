@@ -3,10 +3,9 @@ import subprocess
 import os
 
 import logging
-from util import common
-from templates import constants
-from templates import json_schema
-from util import cert_tool
+from kde.util import common
+from kde.templates import constants,json_schema
+from kde.util import cert_tool
 from service import Service
 
 tmp_dir = constants.tmp_etcd_dir

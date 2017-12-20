@@ -1,5 +1,5 @@
 import os
-from util import config_parser
+from kde.util import config_parser
 
 template_dir = os.path.dirname(__file__)
 

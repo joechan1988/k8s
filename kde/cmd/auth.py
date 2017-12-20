@@ -1,7 +1,7 @@
 import logging
 import os
-from templates import json_schema, constants
-from util import cert_tool, common, config_parser
+from kde.templates import json_schema, constants
+from kde.util import cert_tool, common, config_parser
 
 tmp_k8s_dir = constants.tmp_k8s_dir
 

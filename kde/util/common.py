@@ -7,7 +7,7 @@ import paramiko
 import uuid
 import urllib
 from string import Template
-from templates import constants
+from kde.templates import constants
 
 import shutil
 
@@ -223,7 +223,7 @@ def prep_dir_remote(root, name, clear=False, ip='', user='', password=''):
 
 def arg(*args, **kwargs):
     """
-    Decorator for CLI args.
+    Arguments decorator for CLI args.
 
     :param args:
     :param kwargs:
@@ -236,6 +236,22 @@ def arg(*args, **kwargs):
         if (args, kwargs) not in func.arguments:
             func.arguments.insert(0, (args, kwargs))
 
+        return func
+
+    return _decorator
+
+
+def cmd_help(text):
+    """
+    Help decorator for CLI commands.
+
+    :param text:
+    :return:
+    """
+
+    def _decorator(func):
+        if not hasattr(func, 'help'):
+            func.help = text
         return func
 
     return _decorator

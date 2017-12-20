@@ -1,18 +1,20 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from util import config_parser
-from util import common
-from util.common import RemoteShell
-from cmd import auth, deploy
-from services.etcd import Etcd
-from services.apiserver import Apiserver
-from services.kubelet import Kubelet
-from services.cmanager import CManager
-from services.scheduler import Scheduler
-from services.proxy import Proxy
-from templates import constants
 import logging
+
+import shell
+from cmd import auth, deploy
+from kde.services import *
+# from services.apiserver import Apiserver
+# from services.cmanager import CManager
+# from services.etcd import Etcd
+# from services.kubelet import Kubelet
+# from services.proxy import Proxy
+# from services.scheduler import Scheduler
+from kde.templates import constants
+from kde.util import config_parser
+from kde.util.common import RemoteShell
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
@@ -148,8 +150,13 @@ def test_control_node_deploy():
         rsh.close()
 
 
+def test_shell_getfuns():
+    ret = shell.get_funcs(shell.Subcommands)
+    print(ret)
+
+
 def main():
-    test_validate_cluster_data()
+    test_shell_getfuns()
 
 
 if __name__ == '__main__':

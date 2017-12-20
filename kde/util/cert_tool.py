@@ -1,18 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import subprocess
-import sys
 import os
 import common
 import json
-import shutil
-import argparse
-
-
-# parser = argparse.ArgumentParser()
-# parser.add_argument('--test',dest='test_unit',type=str,default='')
-# args = parser.parse_args()
 
 
 def check_cfssl():
@@ -55,7 +46,7 @@ def gen_cert_files(ca_dir='', profile='', csr_file='', cert_name='', dest_dir=''
         print('---Error: no cfssl tools installed---')
         return
 
-    shell_cmd = 'cfssl gencert -ca='+ca_dir+'ca.pem \
+    shell_cmd = 'cfssl gencert -ca=' + ca_dir + 'ca.pem \
                     -ca-key=' + ca_dir + '/ca-key.pem \
                     -config=' + ca_dir + '/ca-config.json \
                     -profile=' + profile + ' ' + csr_file + ' \
