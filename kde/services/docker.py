@@ -4,7 +4,7 @@ from service import Service
 from kde.util import common
 from kde.templates import constants
 
-tmp_dir = constants.tmp_k8s_dir
+tmp_dir = constants.tmp_kde_dir
 k8s_ssl_dir = constants.k8s_ssl_dir
 
 

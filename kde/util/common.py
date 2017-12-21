@@ -11,7 +11,7 @@ from kde.templates import constants
 
 import shutil
 
-from scp import SCPClient
+from scp import *
 
 
 class RemoteShell(object):
@@ -70,8 +70,11 @@ class RemoteShell(object):
     def copy(self, local_path, remote_path):
 
         scpclient = SCPClient(self.instance.get_transport(), socket_timeout=15.0)
-
-        scpclient.put(local_path, remote_path, recursive=True)
+        try:
+            scpclient.put(local_path, remote_path, recursive=True)
+        except SCPException as e:
+            logging.error(e.message)
+            return
 
 
 def shell_exec(cmd, shell=False, debug=False, output=False):
@@ -255,3 +258,14 @@ def cmd_help(text):
         return func
 
     return _decorator
+
+
+def get_log_level(log_level):
+    level_group = {
+        "debug": 10,
+        "info": 20,
+        "warning": 30,
+        "error": 40,
+        "critical": 50
+    }
+    return level_group[log_level.lower()]

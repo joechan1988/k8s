@@ -14,10 +14,10 @@ from proxy import Proxy
 from templates import constants
 import logging
 
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
-                    datefmt='%a, %d %b %Y %H:%M:%S',
-                    )
+# logging.basicConfig(level=logging.INFO,
+#                     format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+#                     datefmt='%a, %d %b %Y %H:%M:%S',
+#                     )
 
 
 def test_etcd_config():
@@ -133,7 +133,7 @@ def stop_all(rsh=RemoteShell):
 def main():
     stop_all()
     deploy.prep_dir()
-    auth.generate_ca_cert(constants.tmp_k8s_dir)
+    auth.generate_ca_cert(constants.tmp_kde_dir)
 
     test_deploy_etcd()
     test_deploy_apiserver()

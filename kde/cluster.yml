@@ -1,4 +1,4 @@
-debug: False
+log_level: info  #debug,info,warning,error,critical
 
 FQDN: "k8s.wocloud.org"
 external_VIP: "1.1.1.1"  # IP for external access to cluster; should be either a load-balancer IP or a keepalived VIP
@@ -13,7 +13,7 @@ nodes:
 #    role: []
 #    external_IP: 192.168.1.202
   - hostname: k8s-minion1
-    role: [control,etcd,worker]
+    role: [control,etcd]
     external_IP: "192.168.1.203"
     ssh_user: "root"
     ssh_password: "123456"

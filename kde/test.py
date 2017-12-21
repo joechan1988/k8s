@@ -8,12 +8,17 @@ from services.etcd import Etcd
 from services.apiserver import Apiserver
 from services.kubelet import Kubelet
 from templates import constants
+import shell
 import logging
 
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
-                    datefmt='%a, %d %b %Y %H:%M:%S',
-                    )
+#
+# logging.basicConfig(level=logging.INFO,
+#                     format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+#                     datefmt='%a, %d %b %Y %H:%M:%S',
+#                     )
+
+# TODO: Test Case:
+# TODO:     1.
 
 
 def test_config():
@@ -68,7 +73,7 @@ def test_deploy_apiserver():
     configs.load()
 
     deploy.prep_dir()
-    auth.generate_ca_cert(constants.tmp_k8s_dir)
+    auth.generate_ca_cert(constants.tmp_kde_dir)
 
     apiserver = Apiserver()
     apiserver.configure(**configs.data)
@@ -101,8 +106,21 @@ def test_kubelet():
     print(ret)
 
 
+def test_shell():
+    """
+    Test Case:
+        1. Exception:
+            a. cluster.yml validation
+            b. failed service
+            c. failed node
+
+    :return:
+    """
+    shell.main()
+
+
 def main():
-    test_kubelet()
+    test_shell()
 
 
 if __name__ == '__main__':

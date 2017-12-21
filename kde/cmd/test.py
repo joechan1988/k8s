@@ -16,10 +16,10 @@ from kde.templates import constants
 from kde.util import config_parser
 from kde.util.common import RemoteShell
 
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
-                    datefmt='%a, %d %b %Y %H:%M:%S',
-                    )
+# logging.basicConfig(level=logging.INFO,
+#                     format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+#                     datefmt='%a, %d %b %Y %H:%M:%S',
+#                     )
 
 
 def test_check_env():
@@ -56,7 +56,7 @@ def test_control_node_deploy():
     configs = config_parser.Config(constants.cluster_cfg_path)
     configs.load()
 
-    tmp_k8s_dir = constants.tmp_k8s_dir
+    tmp_k8s_dir = constants.tmp_kde_dir
 
     auth.generate_ca_cert(tmp_k8s_dir)
     auth.generate_bootstrap_token(tmp_k8s_dir)
@@ -151,7 +151,7 @@ def test_control_node_deploy():
 
 
 def test_shell_getfuns():
-    ret = shell.get_funcs(shell.Subcommands)
+    ret = shell._get_funcs(shell.Subcommands)
     print(ret)
 
 

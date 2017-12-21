@@ -5,7 +5,7 @@ from kde.templates import json_schema
 from kde.util import cert_tool, common
 from kde.templates import constants
 
-tmp_dir = constants.tmp_k8s_dir
+tmp_dir = constants.tmp_kde_dir
 k8s_ssl_dir = constants.k8s_ssl_dir
 tmp_bin_dir = constants.tmp_bin_dir
 
@@ -117,7 +117,6 @@ class Apiserver(Service):
         #               bootstrap_token=token)
 
         logging.info("Copy kube-apiserver Config Files To Node: " + self.host_name)
-        # rsh = common.RemoteShell(ip, user, password)
         rsh = self.remote_shell
         rsh.prep_dir(k8s_ssl_dir, clear=True)
 
@@ -130,5 +129,3 @@ class Apiserver(Service):
         rsh.copy(self.tmp_cert_path + "kubernetes-key.pem", self.k8s_key)
 
         rsh.execute("systemctl enable kube-apiserver")
-
-        # rsh.close()

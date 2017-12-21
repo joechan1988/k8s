@@ -3,7 +3,7 @@ import os
 from kde.templates import json_schema, constants
 from kde.util import cert_tool, common, config_parser
 
-tmp_k8s_dir = constants.tmp_k8s_dir
+tmp_k8s_dir = constants.tmp_kde_dir
 
 
 def generate_ca_cert(path):
@@ -91,8 +91,8 @@ def generate_admin_kubeconfig(cluster_data):
 
     # generate admin cert files
     admin_json = json_schema.k8s_admin_csr
-    tmp_k8s_dir = constants.tmp_k8s_dir
-    csr_file_path = constants.tmp_k8s_dir + "admin-csr.json"
+    tmp_k8s_dir = constants.tmp_kde_dir
+    csr_file_path = constants.tmp_kde_dir + "admin-csr.json"
 
     cert_tool.generate_json_file(csr_file_path, admin_json)
     cert_tool.gen_cert_files(ca_dir=tmp_k8s_dir, profile='kubernetes',

@@ -10,7 +10,7 @@ from service import Service
 
 tmp_dir = constants.tmp_etcd_dir
 tmp_bin_dir = constants.tmp_bin_dir
-tmp_k8s_dir = constants.tmp_k8s_dir
+tmp_k8s_dir = constants.tmp_kde_dir
 
 
 class Etcd(Service):
@@ -19,7 +19,7 @@ class Etcd(Service):
         self.cluster_type = ''
         self.service_name = 'etcd'
         self.nodes = []
-        self.tmp_cert_path = tmp_dir
+        self.tmp_cert_path = constants.tmp_kde_dir
 
     def configure(self, **configs):
 
