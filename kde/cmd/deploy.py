@@ -4,7 +4,7 @@ import auth
 from kde.util import common, cert_tool, config_parser
 from kde.templates import constants, json_schema
 from kde.util.common import RemoteShell
-from kde.util.exception import (PreCheckError, ClusterConfigError, BaseError)
+from kde.util.exception import *
 from kde.services import *
 
 
@@ -111,7 +111,7 @@ def pre_check(cluster_data):
             raise PreCheckError(summary["hint"])
 
 
-def prep_binaries(path):
+def prep_binaries(path, cluster_data):
     """
     Prepare binaries for local start.
     Could be rpm-installed or ftp downloaded.
@@ -119,15 +119,30 @@ def prep_binaries(path):
     :return:
     """
 
-    configs = config_parser.Config(constants.cluster_cfg_path)
-    configs.load()
-    dl_path = configs.data.get("binaries").get("download_url")
-    bin_list = configs.data.get("binaries").get("list")
-    urls = []
-    for binary in bin_list:
-        urls.append(dl_path + binary)
+    # configs = config_parser.Config(constants.cluster_cfg_path)
+    # configs.load()
+    # cluster_data = configs.data
 
-    common.download_binaries(urls, path)
+    bin_list = cluster_data.get("binaries").get("list")
+    redownload_flag = cluster_data.get("binaries").get("redownload")
+
+    if redownload_flag == "yes":
+
+        dl_path = cluster_data.get("binaries").get("download_url")
+        urls = []
+        for binary in bin_list:
+            urls.append(dl_path + binary)
+
+        common.prep_conf_dir(path, "", clear=True)
+        common.download_binaries(urls, path)
+
+    elif redownload_flag == "no":
+        for binary in bin_list:
+            if not common.check_binaries(path, binary):
+                raise BinaryNotFoundError(binary, path)
+
+    else:
+        raise ClusterConfigError("Config field <binaries.redownload> is malformed")
 
 
 def _deploy_node(ip, user, password, hostname, service_list, **cluster_data):
@@ -137,8 +152,8 @@ def _deploy_node(ip, user, password, hostname, service_list, **cluster_data):
     result = {
         "node": hostname,
         "ip": ip,
-        "result":"",
-        "failed_service":[]
+        "result": "",
+        "failed_service": []
     }
 
     for service in service_list:
@@ -172,9 +187,9 @@ def do(cluster_data):
         "summary": "failure",  # success or failure
         "nodes": [
             # {
-                #     "node_name": "",
-                #     "node_ip": "",
-                #     "result": "failure"
+            #     "node_name": "",
+            #     "node_ip": "",
+            #     "result": "failure"
             # }
         ]
     }
@@ -205,8 +220,7 @@ def do(cluster_data):
         if "etcd" in node.get('role'):
             etcd_nodes.append(node)
 
-
-    #  Generate CA cert to temp directory
+    # Generate CA cert to temp directory
     auth.generate_ca_cert(cert_tmp_path)
 
     # Generate Bootstrap Token to temp directory
@@ -214,8 +228,11 @@ def do(cluster_data):
 
     # Prepare binaries to temp directory
 
-    # common.prep_conf_dir(constants.tmp_bin_dir, "", clear=True)
-    # prep_binaries(constants.tmp_bin_dir)
+    tmp_bin_path = cluster_data.get("binaries").get("path")
+    try:
+        prep_binaries(tmp_bin_path, cluster_data)
+    except BaseError as e:
+        logging.error(e.message)
 
     # Generate k8s & etcd cert files to temp directory
 
@@ -241,6 +258,7 @@ def do(cluster_data):
         results_dict["summary"] = "success"
 
         # Attempt to deploy etcd node
+
     for node in etcd_nodes:
         ip = node.get('external_IP')
         user = node.get('ssh_user')
@@ -284,49 +302,6 @@ def do(cluster_data):
         results["nodes"].append(result)
 
     _sum_results(results)
-
-        # for node in nodes:
-        #     ip = node.get('external_IP')
-        #     user = node.get('ssh_user')
-        #     password = node.get("ssh_password")
-        #     name = node.get("hostname")
-        #
-        #     rsh = RemoteShell(ip, user, password)
-        #     rsh.connect()
-        #
-        #     # Executing Node Pre-Check
-        #     precheck_result = pre_check(cluster_data, rsh)
-        #
-        #     if precheck_result["result"] == "failed":
-        #         raise PreCheckError(precheck_result["hint"])
-        #
-        #     if 'etcd' in node.get("role"):
-        #         etcd.remote_shell = rsh
-        #         etcd.node_ip = ip
-        #         etcd.host_name = name
-        #         etcd.tmp_cert_path = cert_tmp_path
-        #         etcd.configure(**cluster_data)
-        #         etcd.deploy()
-        #
-        #         etcd.start()
-        #
-        #     if 'control' in node.get('role'):
-        #         for service in [docker, apiserver, cmanager, scheduler, kubelet, proxy]:
-        #             service.remote_shell = rsh
-        #             service.node_ip = ip
-        #             service.host_name = name
-        #             service.configure(**cluster_data)
-        #             service.deploy()
-        #             service.start()
-        #
-        #     if 'worker' in node.get('role'):
-        #         for service in [docker, kubelet, proxy]:
-        #             service.remote_shell = rsh
-        #             service.node_ip = ip
-        #             service.host_name = name
-        #             service.configure(**cluster_data)
-        #             service.deploy()
-        #             service.start()
 
     return results
 

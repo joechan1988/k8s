@@ -15,6 +15,8 @@ from kde.services import *
 from kde.templates import constants
 from kde.util import config_parser
 from kde.util.common import RemoteShell
+from kde.util.exception import *
+
 
 # logging.basicConfig(level=logging.INFO,
 #                     format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
@@ -104,43 +106,6 @@ def test_control_node_deploy():
                 service.configure(**configs.data)
                 service.deploy()
 
-            # # deploy apiserver
-            # apiserver.remote_shell = rsh
-            # apiserver.node_ip = ip
-            # apiserver.host_name = name
-            # apiserver.configure(**configs.data)
-            # apiserver.deploy()
-            #
-            # # deploy cmanager
-            # cmanager.remote_shell = rsh
-            # cmanager.node_ip = ip
-            # cmanager.host_name = name
-            # cmanager.configure(**configs.data)
-            # cmanager.deploy()
-            #
-            # # deploy scheduler
-            # scheduler.remote_shell = rsh
-            # scheduler.node_ip = ip
-            # scheduler.host_name = name
-            # scheduler.configure(**configs.data)
-            # scheduler.deploy()
-            #
-            # #deploy kubelet
-            # kubelet.remote_shell = rsh
-            # kubelet.node_ip = ip
-            # kubelet.host_name = name
-            # kubelet.configure(**configs.data)
-            # kubelet.deploy()
-            #
-            # #deploy proxy
-            # proxy.remote_shell = rsh
-            # proxy.node_ip = ip
-            # proxy.host_name = name
-            # proxy.configure(**configs.data)
-            # proxy.deploy()
-
-            # start service
-
             apiserver.start()
             scheduler.start()
             cmanager.start()
@@ -155,8 +120,22 @@ def test_shell_getfuns():
     print(ret)
 
 
+def test_prep_binaries():
+    configs = config_parser.Config(constants.cluster_cfg_path)
+    configs.load()
+
+    cluster_data = configs.data
+
+    tmp_bin_path = cluster_data.get("binaries").get("path")
+    try:
+        deploy.prep_binaries(tmp_bin_path, cluster_data)
+    except BaseError as e:
+        logging.critical(e.message)
+
+
+
 def main():
-    test_shell_getfuns()
+    test_prep_binaries()
 
 
 if __name__ == '__main__':

@@ -43,6 +43,8 @@ cni:
 
 binaries:
   download_url: "ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/v1.8.0/server/bin/"
+  path: "/tmp/bin/"
+  redownload: "111"
   list:
     - "kube-apiserver"
     - "kubectl"
