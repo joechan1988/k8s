@@ -1,5 +1,21 @@
 #!/usr/bin/env bash
 
+base_url="ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/v1.8.0/server/bin/"
+save_path="/tmp/bin/"  # Need to be the same path to cluster.yml
+
+binaries_list=(
+kube-apiserver
+kubectl
+kubelet
+kube-controller-manager
+etcd
+etcdctl
+flanneld
+mk-docker-opts.sh
+kube-scheduler
+kube-proxy
+)
+
 version_tag=$1
 remove_all=$2
 
@@ -26,50 +42,25 @@ fi
 
 
 
-#------kubernetes binaries ------
-
-k8s_binaries=(kubectl \
-            kube-apiserver \
-            kube-scheduler \
-            kube-controller-manager\
-            kube-proxy\
-            kubelet \
-            kubeadm \
-            )
-
   #---remove previous binaries ----
 if [ ${remove_all} = 'yes' ]
 then
-  for bin in ${k8s_binaries[@]}
+  for bin in ${binaries_list[@]}
   do
-    rm -f /usr/bin/${bin}
+    rm -f ${save_path}${bin}
   done
 fi
   #-----------------
 
-for bin in ${k8s_binaries[@]}
+for bin in ${binaries_list[@]}
 do
-  if [[ ! -f "/usr/bin/${bin}" ]]
+  if [[ ! -f ${save_path}"${bin}" ]]
   then
-    wget -c -P /usr/bin/ \
-    ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/${version_tag}/server/bin/${bin}
+    wget -c -P ${save_path} \
+    ${base_url}${bin}
+    chmod +x ${save_path}${bin}
   fi
 done
 
-
-#------Flannel&&etcd binaries ------
-
-if [[ ! -f "/usr/bin/flanneld" ||  ! -f "/usr/bin/etcd" ]]
-then
- wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/flannel/flanneld
- wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/flannel/mk-docker-opts.sh
- wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/etcd/etcd
- wget -c -P /usr/bin/ ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/etcd/etcdctl
-fi
-
-chmod +x /usr/bin/kube*
-chmod +x /usr/bin/flanneld
-chmod +x /usr/bin/mk-docker-opts.sh
-chmod +x /usr/bin/etcd*
 
 

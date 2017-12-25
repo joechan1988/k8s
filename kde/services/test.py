@@ -11,8 +11,10 @@ from services.kubelet import Kubelet
 from cmanager import CManager
 from scheduler import Scheduler
 from proxy import Proxy
+from calico import Calico
 from templates import constants
 import logging
+
 
 # logging.basicConfig(level=logging.INFO,
 #                     format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
@@ -129,16 +131,22 @@ def stop_all(rsh=RemoteShell):
     rsh.close()
 
 
+def test_calico():
+    configs = config_parser.Config("../cluster.yml")
+    configs.load()
+
+    calico = Calico()
+    calico.configure(**configs.data)
+    calico.deploy()
+
 
 def main():
-    stop_all()
-    deploy.prep_dir()
-    auth.generate_ca_cert(constants.tmp_kde_dir)
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+                        datefmt='%a, %d %b %Y %H:%M:%S',
+                        )
 
-    test_deploy_etcd()
-    test_deploy_apiserver()
-    test_admin_kubeconfig()
-    test_proxy()
+    test_calico()
 
 
 if __name__ == '__main__':

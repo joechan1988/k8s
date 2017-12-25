@@ -34,6 +34,13 @@ def validate_cluster_data(cluster_data):
             raise ClusterConfigError(
                 "Node {0}, IP:{1} is labeled as control and worker at the same time".format(name, ip))
 
+    # Log-level literal check
+
+    log_level_literal = ["debug", "info", "warning", "error", "critical"]
+    log_level = cluster_data.get("log_level")
+    if log_level not in log_level_literal:
+        raise ClusterConfigError("Log level is set wrongly for config: {0}".format(log_level))
+
 
 def pre_check(cluster_data):
     """
@@ -105,6 +112,12 @@ def pre_check(cluster_data):
 
         # TODO: Essential module check: systemctl, nslookup ...
 
+        # ---- SELinux check ---
+        selinux_check = rsh.execute("getenforce")
+        if selinux_check[0] == "Enforcing":
+            summary["result"] = "failed"
+            summary["hint"] = summary["hint"] + "SElinux is set Enabled; "
+
         rsh.close()
 
         if summary["result"] == "failed":
@@ -166,6 +179,8 @@ def _deploy_node(ip, user, password, hostname, service_list, **cluster_data):
         if not ret:
             result["failed_service"].append(service.service_name)
 
+    rsh.copy(constants.tmp_kde_dir+"admin.kubeconfig","/root/.kube/config")
+
     if len(result["failed_service"]) != 0:
         result["result"] = "failure"
     else:
@@ -220,6 +235,9 @@ def do(cluster_data):
         if "etcd" in node.get('role'):
             etcd_nodes.append(node)
 
+    # Get CNI type
+    cni_plugin = cluster_data.get("cni").get("plugin")
+
     # Generate CA cert to temp directory
     auth.generate_ca_cert(cert_tmp_path)
 
@@ -249,6 +267,7 @@ def do(cluster_data):
     proxy = Proxy()
     etcd = Etcd()
     kubelet = Kubelet()
+    calico = Calico()
 
     def _sum_results(results_dict):
         for item in results_dict["nodes"]:
@@ -298,8 +317,25 @@ def do(cluster_data):
         name = node.get("hostname")
 
         service_list = [docker, kubelet, proxy]
+
         result = _deploy_node(ip, user, password, name, service_list, **cluster_data)
         results["nodes"].append(result)
+
+        # Attempt to deploy CNI plugin
+    if cni_plugin == "calico":
+        for node in control_nodes:
+            ip = node.get('external_IP')
+            user = node.get('ssh_user')
+            password = node.get("ssh_password")
+            name = node.get("hostname")
+
+            service_list = [calico]
+            result = _deploy_node(ip, user, password, name, service_list, **cluster_data)
+            if result["result"] == "failure":
+                logging.error("Failed to deploy calico cni plugin on node: {0}. Please try deploying it manually.".format(node))
+
+            break
+
 
     _sum_results(results)
 

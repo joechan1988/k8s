@@ -5,6 +5,7 @@ from etcd import Etcd
 from kubelet import Kubelet
 from proxy import Proxy
 from scheduler import Scheduler
+from calico import Calico
 from service import Service
 
 __all__ = [
@@ -15,5 +16,6 @@ __all__ = [
     "Etcd",
     "Proxy",
     "Scheduler",
-    "Service"
+    "Service",
+    "Calico"
 ]
