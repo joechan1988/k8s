@@ -4,6 +4,7 @@ FQDN: "k8s.wocloud.org"
 external_VIP: "1.1.1.1"  # IP for external access to cluster; should be either a load-balancer IP or a keepalived VIP
 
 nodes:
+# role: control; worker; etcd;
 #  - hostname: k8s-master1
 #    role: []
 #    external_IP: "192.168.1.201"

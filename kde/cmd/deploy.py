@@ -157,6 +157,8 @@ def prep_binaries(path, cluster_data):
     else:
         raise ClusterConfigError("Config field <binaries.redownload> is malformed")
 
+    common.shell_exec("cp -f "+path+"kubectl /usr/bin/")
+
 
 def _deploy_node(ip, user, password, hostname, service_list, **cluster_data):
     rsh = RemoteShell(ip, user, password)
@@ -179,7 +181,7 @@ def _deploy_node(ip, user, password, hostname, service_list, **cluster_data):
         if not ret:
             result["failed_service"].append(service.service_name)
 
-    rsh.copy(constants.tmp_kde_dir+"admin.kubeconfig","/root/.kube/config")
+    rsh.copy(constants.tmp_kde_dir + "admin.kubeconfig", "/root/.kube/config")
 
     if len(result["failed_service"]) != 0:
         result["result"] = "failure"
@@ -238,12 +240,6 @@ def do(cluster_data):
     # Get CNI type
     cni_plugin = cluster_data.get("cni").get("plugin")
 
-    # Generate CA cert to temp directory
-    auth.generate_ca_cert(cert_tmp_path)
-
-    # Generate Bootstrap Token to temp directory
-    auth.generate_bootstrap_token(cert_tmp_path)
-
     # Prepare binaries to temp directory
 
     tmp_bin_path = cluster_data.get("binaries").get("path")
@@ -251,6 +247,12 @@ def do(cluster_data):
         prep_binaries(tmp_bin_path, cluster_data)
     except BaseError as e:
         logging.error(e.message)
+
+    # Generate CA cert to temp directory
+    auth.generate_ca_cert(cert_tmp_path)
+
+    # Generate Bootstrap Token to temp directory
+    auth.generate_bootstrap_token(cert_tmp_path)
 
     # Generate k8s & etcd cert files to temp directory
 
@@ -332,10 +334,10 @@ def do(cluster_data):
             service_list = [calico]
             result = _deploy_node(ip, user, password, name, service_list, **cluster_data)
             if result["result"] == "failure":
-                logging.error("Failed to deploy calico cni plugin on node: {0}. Please try deploying it manually.".format(node))
+                logging.error(
+                    "Failed to deploy calico cni plugin on node: {0}. Please try deploying it manually.".format(node))
 
             break
-
 
     _sum_results(results)
 

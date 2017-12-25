@@ -38,7 +38,7 @@ class Calico(Service):
                       )
 
         rsh = self.remote_shell
-        rsh.prep_dir(tmp_dir, clear=True)
+        rsh.prep_dir(tmp_dir, clear=False)
         rsh.copy(tmp_dir + "calico.yaml", tmp_dir + "calico.yaml")
 
 
