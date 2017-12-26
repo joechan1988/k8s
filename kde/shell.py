@@ -65,7 +65,12 @@ def _set_log_level(level_str):
 
 def _parse_cluster_data(config_path):
     configs = config_parser.Config(config_path)
-    configs.load()
+    try:
+        configs.load()
+    except exception.BaseError as e:
+        print(e.message)
+        return None
+
     return configs.data
 
 
@@ -92,19 +97,13 @@ def main():
         for args, kwargs in getattr(func, 'arguments', []):
             func_parser.add_argument(*args, **kwargs)
 
-    # parser_deploy = subparsers.add_parser('deploy', help='Deploy Kubernetes')
-
-    # parser_deploy.set_defaults(func=deploy)
-
-    # parser_test = subparsers.add_parser('test', help='Run Tests')
-    # for args, kwargs in getattr(test, 'arguments', []):
-    #     parser_test.add_argument(*args, **kwargs)
-    # parser_test.set_defaults(func=test)
-
     top_args = top_parser.parse_args()
 
     # Parse cluster config file
     cluster_data = _parse_cluster_data(top_args.config)
+
+    if not cluster_data:
+        return
 
     # Set log level
     _set_log_level(cluster_data.get('log_level'))

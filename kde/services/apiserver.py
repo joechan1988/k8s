@@ -10,12 +10,6 @@ k8s_ssl_dir = constants.k8s_ssl_dir
 tmp_bin_dir = constants.tmp_bin_dir
 
 
-#
-# TODO: 1. Get Cert Files From etcd Node Or From /tmp/etcd/
-# TODO: 2. k8s cert file: self.cafile,self.keyfile, ... ; rsh copy cert file
-#
-
-
 class Apiserver(Service):
     def __init__(self):
         super(Apiserver, self).__init__()

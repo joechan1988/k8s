@@ -19,8 +19,6 @@ import logging
 #                     datefmt='%a, %d %b %Y %H:%M:%S',
 #                     )
 
-# TODO: Test Case:
-# TODO:     1.
 
 
 def test_config():

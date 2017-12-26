@@ -18,32 +18,6 @@ from kde.services import *
 #                     )
 
 
-def validate_cluster_data(cluster_data):
-    """
-    Constraints:
-    1. control node shouldn't be either labeled as worker node
-
-    :param cluster_data:
-    :return:
-    """
-
-    # Node Role Check:
-
-    for node in cluster_data.get("nodes"):
-        role = node.get('role')
-        name = node.get('hostname')
-        ip = node.get('external_IP')
-        if 'control' in role and 'worker' in role:
-            raise ClusterConfigError(
-                "Node {0}, IP:{1} is labeled as control and worker at the same time".format(name, ip))
-
-    # Log-level literal check
-
-    log_level_literal = ["debug", "info", "warning", "error", "critical"]
-    log_level = cluster_data.get("log_level")
-    if log_level not in log_level_literal:
-        raise ClusterConfigError("Log level is set wrongly for config: {0}".format(log_level))
-
 
 def pre_check(cluster_data):
     """
@@ -84,6 +58,23 @@ def pre_check(cluster_data):
             summary["hint"] = "Node {" + name + "}(IP: " + ip + ") is NOT reachable. Check SSH connectivity"
             continue
 
+        # Essential module check: systemctl, nslookup ...
+
+        essential_bins = ["systemctl","docker","sysctl"]
+        recommended_bins = ['nslookup']
+
+        for bin_name in essential_bins:
+            check_result = common.check_preinstalled_binaries(bin_name)
+            if not check_result:
+                summary["result"] = "failed"
+                summary["hint"] = summary["hint"] + "Module or component {0} is not found.".format(bin_name)
+
+        for bin_name in recommended_bins:
+            check_result = common.check_preinstalled_binaries(bin_name)
+            if not check_result:
+                logging.warning("Module or component {0} is not found.".format(bin_name))
+                summary["hint"] = summary["hint"] + "Module or component {0} is not found.".format(bin_name)
+
         # ---Docker Version Check ---
         docker_version = rsh.execute(docker_version_cmd)
         if "1.12" not in docker_version[0]:
@@ -113,7 +104,7 @@ def pre_check(cluster_data):
             summary["result"] = "failed"
             summary["hint"] = summary["hint"] + "IPV4 Forwarding Is Disabled; "
 
-        # TODO: Essential module check: systemctl, nslookup ...
+
 
         # ---- SELinux check ---
         selinux_check = rsh.execute("getenforce")
@@ -125,6 +116,8 @@ def pre_check(cluster_data):
 
         if summary["result"] == "failed":
             raise PreCheckError(summary["hint"])
+
+        return summary
 
 
 def prep_binaries(path, cluster_data):
@@ -160,7 +153,7 @@ def prep_binaries(path, cluster_data):
     else:
         raise ClusterConfigError("Config field <binaries.redownload> is malformed")
 
-    common.shell_exec("\cp -f " + path + "kubectl /usr/bin/",shell=True)
+    common.shell_exec("\cp -f " + path + "kubectl /usr/bin/", shell=True)
 
 
 def _deploy_node(ip, user, password, hostname, service_list, **cluster_data):
@@ -210,11 +203,12 @@ def _reset_node(ip, user, password, hostname, service_list, **cluster_data):
 
 
 def do(cluster_data):
-    # TODO: Deployment procedure: all control node failed,stop procedure
-    # TODO: deployment order: etcd node > control node > worker node
-    # TODO: result notification
-    # TODO: depart deploy action to single method
-    # TODO: deal with deploy procedure Exception
+    """
+    Deployment order: etcd node > control node > worker node;
+
+    :param cluster_data:
+    :return:
+    """
 
     results = {
         "summary": "failure",  # success or failure
@@ -228,11 +222,13 @@ def do(cluster_data):
     }
 
     try:
-        validate_cluster_data(cluster_data)
-        pre_check(cluster_data)
+        # validate_cluster_data(cluster_data)
+        precheck_result = pre_check(cluster_data)
     except BaseError as e:
         logging.error(e.message)
         return
+
+    logging.info("Environment check result: "+precheck_result["result"])
 
     # Prepare local temp directory
 
@@ -322,7 +318,10 @@ def do(cluster_data):
         result = _deploy_node(ip, user, password, name, service_list, **cluster_data)
         results["nodes"].append(result)
 
-        # Summary controller node deploy results.If failure, stop the whole deployment
+        if result["result"] == "success":
+            common.shell_exec("kubectl label node " + ip + " node-role.kubernetes.io/master=", shell=True)
+
+            # Summary controller node deploy results.If failure, stop the whole deployment
     _sum_results(results)
     if results["summary"] == "failure":
         return results
@@ -405,6 +404,7 @@ def reset(**cluster_data):
 
         for service in service_list:
             service.remote_shell = rsh
+            service.host_name = name
             service.stop()
             rsh.execute("systemctl disable " + service.service_name)
 
@@ -424,6 +424,7 @@ def reset(**cluster_data):
 
         service_list = [etcd]
         for service in service_list:
+            service.host_name = name
             service.remote_shell = rsh
             service.stop()
             rsh.execute("systemctl disable " + service.service_name)

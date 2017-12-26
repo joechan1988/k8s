@@ -21,7 +21,8 @@ ExecStart=/usr/bin/kubelet \
   --logtostderr=true \
   --cgroup-driver=systemd \
   --fail-swap-on=false \
-  --v=2 $cni
+  --v=2 --runtime-cgroups=/sys/fs/cgroup/systemd/system.slice --kubelet-cgroups=/sys/fs/cgroup/systemd/system.slice \
+  $cni
 
 ExecStopPost=/sbin/iptables -A INPUT -s 10.0.0.0/8 -p tcp --dport 4194 -j ACCEPT
 ExecStopPost=/sbin/iptables -A INPUT -s 172.16.0.0/12 -p tcp --dport 4194 -j ACCEPT

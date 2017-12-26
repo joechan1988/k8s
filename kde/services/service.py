@@ -31,11 +31,11 @@ class Service(object):
 
         rsh.execute("systemctl daemon-reload")
         output = rsh.execute("systemctl restart " + self.service_name)
-        logging.info(output)
-        # rsh.close()
+        # logging.info(output)
 
         if output and "failed" in output[0]:
-            logging.critical("Failed To Start Service: " + self.service_name + " On Node: " + self.host_name)
+            logging.error(output)
+            logging.error("Failed To Start Service: " + self.service_name + " On Node: " + self.host_name)
             return False
         else:
             logging.critical("Finished Starting Service: " + self.service_name + " On Node: " + self.host_name)

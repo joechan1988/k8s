@@ -38,8 +38,9 @@ def test_validate_cluster_data():
 
     try:
         deploy.validate_cluster_data(cluster_data)
+
     except BaseException as e:
-        logging.info(e.message)
+        print(e.message)
 
 
 def stop_all(rsh=RemoteShell()):
@@ -135,7 +136,7 @@ def test_prep_binaries():
 
 
 def main():
-    test_prep_binaries()
+    test_validate_cluster_data()
 
 
 if __name__ == '__main__':
