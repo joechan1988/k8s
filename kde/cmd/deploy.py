@@ -160,7 +160,7 @@ def prep_binaries(path, cluster_data):
     else:
         raise ClusterConfigError("Config field <binaries.redownload> is malformed")
 
-    common.shell_exec("cp -f "+path+"kubectl /usr/bin/")
+    common.shell_exec("\cp -f " + path + "kubectl /usr/bin/",shell=True)
 
 
 def _deploy_node(ip, user, password, hostname, service_list, **cluster_data):
@@ -195,10 +195,9 @@ def _deploy_node(ip, user, password, hostname, service_list, **cluster_data):
 
     return result
 
+
 def _reset_node(ip, user, password, hostname, service_list, **cluster_data):
-
-    clean_up_dirs = ["/var/lib/kubelet/","/etc/kubernetes/"]
-
+    clean_up_dirs = ["/var/lib/kubelet/", "/etc/kubernetes/"]
 
     rsh = RemoteShell(ip, user, password)
     rsh.connect()
@@ -208,7 +207,6 @@ def _reset_node(ip, user, password, hostname, service_list, **cluster_data):
         service.node_ip = ip
         service.host_name = hostname
         service.stop()
-
 
 
 def do(cluster_data):
@@ -400,7 +398,7 @@ def reset(**cluster_data):
         password = node.get("ssh_password")
         name = node.get("hostname")
 
-        rsh = RemoteShell(ip,user,password)
+        rsh = RemoteShell(ip, user, password)
         rsh.connect()
 
         service_list = [docker, apiserver, cmanager, scheduler, kubelet, proxy]
@@ -408,7 +406,7 @@ def reset(**cluster_data):
         for service in service_list:
             service.remote_shell = rsh
             service.stop()
-            rsh.execute("systemctl disable "+service.service_name)
+            rsh.execute("systemctl disable " + service.service_name)
 
         rsh.execute("umount /var/lib/kubelet/pods/*/volumes/*/*")
         rsh.execute("rm -rf /var/lib/kubelet/ /etc/kubernetes/")
@@ -421,17 +419,17 @@ def reset(**cluster_data):
         user = node.get('ssh_user')
         password = node.get("ssh_password")
         name = node.get("hostname")
-        rsh = RemoteShell(ip,user,password)
+        rsh = RemoteShell(ip, user, password)
         rsh.connect()
 
         service_list = [etcd]
         for service in service_list:
             service.remote_shell = rsh
             service.stop()
-            rsh.execute("systemctl disable "+service.service_name)
+            rsh.execute("systemctl disable " + service.service_name)
 
-        bak_dir_name = "etcd_bak_"+"".join(random.sample(string.ascii_letters + string.digits, 8))
-        rsh.execute("mv /var/lib/etcd/ /var/lib/"+bak_dir_name+"/")
+        bak_dir_name = "etcd_bak_" + "".join(random.sample(string.ascii_letters + string.digits, 8))
+        rsh.execute("mv /var/lib/etcd/ /var/lib/" + bak_dir_name + "/")
         rsh.execute("rm -rf /var/lib/etcd/")
 
     for node in worker_nodes:
@@ -440,7 +438,7 @@ def reset(**cluster_data):
         password = node.get("ssh_password")
         name = node.get("hostname")
 
-        rsh = RemoteShell(ip,user,password)
+        rsh = RemoteShell(ip, user, password)
         rsh.connect()
 
         service_list = [docker, kubelet, proxy]
@@ -448,7 +446,7 @@ def reset(**cluster_data):
         for service in service_list:
             service.remote_shell = rsh
             service.stop()
-            rsh.execute("systemctl disable "+service.service_name)
+            rsh.execute("systemctl disable " + service.service_name)
 
         rsh.execute("umount /var/lib/kubelet/pods/*/volumes/*/*")
         rsh.execute("rm -rf /var/lib/kubelet/ /etc/kubernetes/")
