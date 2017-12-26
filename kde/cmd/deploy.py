@@ -291,7 +291,7 @@ def do(cluster_data):
         for item in results_dict["nodes"]:
             if item["result"] == "failure":
                 results_dict["summary"] = "failure"
-                break
+                return
         results_dict["summary"] = "success"
 
         # Attempt to deploy etcd node

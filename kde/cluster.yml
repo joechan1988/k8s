@@ -1,4 +1,4 @@
-log_level: debug  #debug,info,warning,error,critical
+log_level: info  #debug,info,warning,error,critical
 
 FQDN: "k8s.wocloud.org"
 external_VIP: "1.1.1.1"  # IP for external access to cluster; should be either a load-balancer IP or a keepalived VIP
@@ -27,6 +27,7 @@ kubernetes:
   cluster_kubernetes_svc_ip: "10.254.0.1"
   cluster_dns_svc_ip: "10.254.0.2"
   cluster_dns_domain: "cluster.local."
+  config_directory: "/etc/kubernetes/"
 
 etcd:
   cluster_type: "new"

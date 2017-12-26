@@ -28,20 +28,25 @@ class Apiserver(Service):
     def configure(self, **configs):
         k8s_configs = configs.get("kubernetes")
         etcd_configs = configs.get("etcd")
+        config_dir = k8s_configs.get("config_directory")
+        ssl_dir = config_dir + "ssl/"
 
+        self.config_dir = config_dir
+        self.ssl_dir = ssl_dir
         self.service_cidr = k8s_configs.get('service_cidr')
         self.node_port_range = k8s_configs.get('node_port_range')
         self.etcd_endpoints = configs.get('etcd_endpoints')
-        self.etcd_cafile = etcd_configs.get('cafile')
-        self.etcd_keyfile = etcd_configs.get('keyfile')
-        self.etcd_certfile = etcd_configs.get('certfile')
+        self.etcd_cafile = ssl_dir + "ca.pem"
+        self.etcd_keyfile = ssl_dir + "etcd-key.pem"
+        self.etcd_certfile = ssl_dir + "etcd.pem"
         self.etcd_ssl = etcd_configs.get('ssl')
         self.fqdn = configs.get("FQDN")
 
-        self.ca_cert = k8s_ssl_dir + "ca.pem"
-        self.ca_key = k8s_ssl_dir + "ca-key.pem"
-        self.k8s_cert = k8s_ssl_dir + "kubernetes.pem"
-        self.k8s_key = k8s_ssl_dir + "kubernetes-key.pem"
+        self.ca_cert = ssl_dir + "ca.pem"
+        self.ca_key = ssl_dir + "ca-key.pem"
+        self.k8s_cert = ssl_dir + "kubernetes.pem"
+        self.k8s_key = ssl_dir + "kubernetes-key.pem"
+
         #
         # nodes = configs.get('nodes')
         #
@@ -118,14 +123,16 @@ class Apiserver(Service):
 
         logging.info("Copy kube-apiserver Config Files To Node: " + self.host_name)
         rsh = self.remote_shell
-        rsh.prep_dir(k8s_ssl_dir, clear=True)
+        rsh.prep_dir(self.ssl_dir, clear=True)
 
         rsh.copy(tmp_bin_dir + "kube-apiserver", "/usr/bin/")
         rsh.copy(tmp_dir + "kube-apiserver.service", "/etc/systemd/system/")
-        rsh.copy(self.tmp_cert_path + "token.csv", "/etc/kubernetes/")
+        rsh.copy(self.tmp_cert_path + "token.csv", self.config_dir)
         rsh.copy(self.tmp_cert_path + "ca.pem", self.ca_cert)
         rsh.copy(self.tmp_cert_path + "ca-key.pem", self.ca_key)
         rsh.copy(self.tmp_cert_path + "kubernetes.pem", self.k8s_cert)
         rsh.copy(self.tmp_cert_path + "kubernetes-key.pem", self.k8s_key)
+        rsh.copy(self.tmp_cert_path + "etcd.pem", self.etcd_certfile)
+        rsh.copy(self.tmp_cert_path + "etcd-key.pem", self.etcd_keyfile)
 
         rsh.execute("systemctl enable kube-apiserver")

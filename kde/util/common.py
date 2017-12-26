@@ -76,6 +76,15 @@ class RemoteShell(object):
             logging.error(e.message)
             return
 
+    def get(self,remote_path,local_path):
+
+        scpclient = SCPClient(self.instance.get_transport(), socket_timeout=15.0)
+        try:
+            scpclient.get(remote_path, local_path, recursive=True)
+        except SCPException as e:
+            logging.error(e.message)
+            return
+
 
 def shell_exec(cmd, shell=False, debug=False, output=False):
     if not output:
