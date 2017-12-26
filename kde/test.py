@@ -9,7 +9,9 @@ from services.apiserver import Apiserver
 from services.kubelet import Kubelet
 from templates import constants
 import shell
+import random, string
 import logging
+
 
 #
 # logging.basicConfig(level=logging.INFO,
@@ -119,8 +121,13 @@ def test_shell():
     shell.main()
 
 
+def test_bak_etcd():
+    bak_dir_name = "etcd_bak_"+"".join(random.sample(string.ascii_letters + string.digits, 8))
+    print(bak_dir_name)
+
+
 def main():
-    test_shell()
+    test_bak_etcd()
 
 
 if __name__ == '__main__':

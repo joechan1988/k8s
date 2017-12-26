@@ -37,6 +37,11 @@ class Subcommands(object):
 
         logging.critical(results)
 
+    @common.cmd_help("Reset the last cluster deployment")
+    def reset(self, args, **cluster_data):
+
+        deploy.reset(**cluster_data)
+
     # @common.arg('--config', default=constants.cluster_cfg_path, help="Default config file path")
     def test(self, args):
         print(args.config)

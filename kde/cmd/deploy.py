@@ -1,6 +1,9 @@
 import os
 import logging
+import string
+
 import auth
+import random
 from kde.util import common, cert_tool, config_parser
 from kde.templates import constants, json_schema
 from kde.util.common import RemoteShell
@@ -192,6 +195,21 @@ def _deploy_node(ip, user, password, hostname, service_list, **cluster_data):
 
     return result
 
+def _reset_node(ip, user, password, hostname, service_list, **cluster_data):
+
+    clean_up_dirs = ["/var/lib/kubelet/","/etc/kubernetes/"]
+
+
+    rsh = RemoteShell(ip, user, password)
+    rsh.connect()
+
+    for service in service_list:
+        service.remote_shell = rsh
+        service.node_ip = ip
+        service.host_name = hostname
+        service.stop()
+
+
 
 def do(cluster_data):
     # TODO: Deployment procedure: all control node failed,stop procedure
@@ -342,6 +360,101 @@ def do(cluster_data):
     _sum_results(results)
 
     return results
+
+
+def reset(**cluster_data):
+    """
+    Reset the last deployment
+
+    :return:
+    """
+
+    # Stop all services
+    # Unmount pods volumes
+    # Clear the temp directories
+    # Restart docker daemon
+
+    docker = Docker()
+    apiserver = Apiserver()
+    cmanager = CManager()
+    scheduler = Scheduler()
+    proxy = Proxy()
+    etcd = Etcd()
+    kubelet = Kubelet()
+
+    control_nodes = list()
+    worker_nodes = list()
+    etcd_nodes = list()
+    nodes = cluster_data.get("nodes")
+    for node in nodes:
+        if "control" in node.get('role'):
+            control_nodes.append(node)
+        if "worker" in node.get('role'):
+            worker_nodes.append(node)
+        if "etcd" in node.get('role'):
+            etcd_nodes.append(node)
+
+    for node in control_nodes:
+        ip = node.get('external_IP')
+        user = node.get('ssh_user')
+        password = node.get("ssh_password")
+        name = node.get("hostname")
+
+        rsh = RemoteShell(ip,user,password)
+        rsh.connect()
+
+        service_list = [docker, apiserver, cmanager, scheduler, kubelet, proxy]
+
+        for service in service_list:
+            service.remote_shell = rsh
+            service.stop()
+            rsh.execute("systemctl disable "+service.service_name)
+
+        rsh.execute("umount /var/lib/kubelet/pods/*/volumes/*/*")
+        rsh.execute("rm -rf /var/lib/kubelet/ /etc/kubernetes/")
+
+        docker.start()
+        rsh.close()
+
+    for node in etcd_nodes:
+        ip = node.get('external_IP')
+        user = node.get('ssh_user')
+        password = node.get("ssh_password")
+        name = node.get("hostname")
+        rsh = RemoteShell(ip,user,password)
+        rsh.connect()
+
+        service_list = [etcd]
+        for service in service_list:
+            service.remote_shell = rsh
+            service.stop()
+            rsh.execute("systemctl disable "+service.service_name)
+
+        bak_dir_name = "etcd_bak_"+"".join(random.sample(string.ascii_letters + string.digits, 8))
+        rsh.execute("mv /var/lib/etcd/ /var/lib/"+bak_dir_name+"/")
+        rsh.execute("rm -rf /var/lib/etcd/")
+
+    for node in worker_nodes:
+        ip = node.get('external_IP')
+        user = node.get('ssh_user')
+        password = node.get("ssh_password")
+        name = node.get("hostname")
+
+        rsh = RemoteShell(ip,user,password)
+        rsh.connect()
+
+        service_list = [docker, kubelet, proxy]
+
+        for service in service_list:
+            service.remote_shell = rsh
+            service.stop()
+            rsh.execute("systemctl disable "+service.service_name)
+
+        rsh.execute("umount /var/lib/kubelet/pods/*/volumes/*/*")
+        rsh.execute("rm -rf /var/lib/kubelet/ /etc/kubernetes/")
+
+        docker.start()
+        rsh.close()
 
 
 def join():
