@@ -48,7 +48,7 @@ def generate_apiserver_cert(path, cluster_data):
     csr_json["hosts"] = cert_hosts
     cert_tool.generate_json_file(path + "kubernetes-csr.json", csr_json)
 
-    logging.info("Generating kube-apiserver Cert Files...")
+    logging.critical("Generating kube-apiserver Cert Files...")
     cert_tool.gen_cert_files(ca_dir=path, profile='kubernetes',
                              csr_file=path + 'kubernetes-csr.json',
                              cert_name='kubernetes',
@@ -70,7 +70,7 @@ def generate_etcd_cert(path, cluster_data):
 
     cert_tool.generate_json_file(path + "etcd-csr.json", csr_json)
 
-    logging.info("Generating etcd Cert Files...")
+    logging.critical("Generating etcd Cert Files...")
     cert_tool.gen_cert_files(ca_dir=path, profile='kubernetes',
                              csr_file=path + 'etcd-csr.json',
                              cert_name='etcd',

@@ -141,10 +141,10 @@ def test_calico():
 
 
 def main():
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
-                        datefmt='%a, %d %b %Y %H:%M:%S',
-                        )
+    # logging.basicConfig(level=logging.INFO,
+    #                     format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+    #                     datefmt='%a, %d %b %Y %H:%M:%S',
+    #                     )
 
     test_calico()
 

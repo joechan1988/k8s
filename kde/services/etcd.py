@@ -99,4 +99,4 @@ class Etcd(Service):
             # rsh.close()
 
         elif self.cluster_type == "existing":
-            logging.info("Using Existing etcd Cluster")
+            logging.critical("Using Existing etcd Cluster")

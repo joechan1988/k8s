@@ -35,7 +35,8 @@ class Subcommands(object):
         except exception.BaseError as e:
             logging.critical(e.message)
 
-        logging.critical(results)
+        if results is not None:
+            logging.critical(results)
 
     @common.cmd_help("Reset the last cluster deployment")
     def reset(self, args, **cluster_data):
@@ -56,8 +57,15 @@ def _get_funcs(obj):
 
 
 def _set_log_level(level_str):
+
     log_level = common.get_log_level(level_str)
-    logging.basicConfig(level=log_level,
+    if log_level >= 30:
+        logging.basicConfig(level=log_level,
+                            format=' %(message)s',
+                            datefmt='%a, %d %b %Y %H:%M:%S',
+                            )
+    else:
+        logging.basicConfig(level=log_level,
                         format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
                         datefmt='%a, %d %b %Y %H:%M:%S',
                         )

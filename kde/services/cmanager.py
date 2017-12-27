@@ -33,7 +33,7 @@ class CManager(Service):
         #     password = node.get("ssh_password")
         #     name = node.get("hostname")
 
-        logging.info("Starting To Deploy Controller Manager On Node: %s, IP address: %s ", self.host_name, self.node_ip)
+        # logging.critical("Starting To Deploy Controller Manager On Node: %s, IP address: %s ", self.host_name, self.node_ip)
 
         common.render(os.path.join(constants.template_dir, "kube-controller-manager.service"),
                       os.path.join(constants.kde_service_dir, "kube-controller-manager.service"),

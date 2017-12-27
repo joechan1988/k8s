@@ -72,7 +72,7 @@ def pre_check(cluster_data):
         for bin_name in recommended_bins:
             check_result = common.check_preinstalled_binaries(bin_name)
             if not check_result:
-                logging.warning("Module or component {0} is not found.".format(bin_name))
+                logging.warning("Warning: Module or component {0} is not found.".format(bin_name))
                 summary["hint"] = summary["hint"] + "Module or component {0} is not found.".format(bin_name)
 
         # ---Docker Version Check ---
@@ -96,7 +96,7 @@ def pre_check(cluster_data):
 
         if len(leftover_dirs):
             summary["result"] = "failed"
-            summary["hint"] = summary["hint"] + "Fount Unempty Directories: " + leftover_dir_names + "; "
+            summary["hint"] = summary["hint"] + "Fount non-empty directories: {0} on node: {1}".format(leftover_dir_names,name)
 
         # --- IPV4 Forwarding Check ---
         ipv4_forward_check = rsh.execute("sysctl net.ipv4.conf.all.forwarding -b")
@@ -226,8 +226,8 @@ def do(cluster_data):
     except BaseError as e:
         logging.error(e.message)
         return
-
-    logging.info("Environment check result: " + precheck_result["result"])
+    if precheck_result is not None:
+        logging.info("Environment check result: " + precheck_result["result"])
 
     # Prepare local temp directory
 

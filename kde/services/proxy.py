@@ -21,13 +21,8 @@ class Proxy(Service):
         #         self.nodes.append(node)
 
     def _deploy_service(self):
-        # for node in self.nodes:
-        #     ip = node.get('external_IP')
-        #     user = node.get('ssh_user')
-        #     password = node.get("ssh_password")
-        #     name = node.get("hostname")
 
-        logging.info("Starting To Deploy kube-proxy On Node: %s, IP address: %s ", self.host_name, self.node_ip)
+        # logging.critical("Starting To Deploy kube-proxy On Node: %s, IP address: %s ", self.host_name, self.node_ip)
 
         common.render(os.path.join(constants.template_dir, "kube-proxy.service"),
                       os.path.join(constants.kde_service_dir, "kube-proxy.service"),

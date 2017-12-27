@@ -11,11 +11,13 @@ class Service(object):
 
     def deploy(self):
 
-        logging.info("Deploying Service: " + self.service_name + " On Node: " + self.host_name)
+        logging.critical(
+            "Deploying service: {0} on node {1} (IP address: {2}).".format(self.service_name, self.host_name,
+                                                                           self.node_ip))
 
         self._deploy_service()
 
-        logging.info("Finished Deploying Service: " + self.service_name + " On Node: " + self.host_name)
+        logging.critical("Finished Deploying service: {0} on node: {1}".format(self.service_name, self.host_name))
 
     def _deploy_service(self):
         pass
@@ -25,7 +27,7 @@ class Service(object):
 
     def start(self):
 
-        logging.info("Starting " + self.service_name + " Service On Node: " + self.host_name)
+        logging.critical("Starting " + self.service_name + " Service On Node: " + self.host_name)
         rsh = self.remote_shell
         # rsh.connect()
 
@@ -42,7 +44,7 @@ class Service(object):
             return True
 
     def stop(self):
-        logging.info("Stopping " + self.service_name + " Service On Node: " + self.host_name)
+        logging.critical("Stopping " + self.service_name + " Service On Node: " + self.host_name)
         rsh = self.remote_shell
 
         rsh.execute("systemctl stop " + self.service_name)

@@ -80,7 +80,7 @@ class Apiserver(Service):
 
     def _deploy_service(self):
 
-        logging.info("Starting To Deploy Apiserver On Node: %s, IP address: %s ", self.host_name, self.node_ip)
+        # logging.critical("Starting To Deploy Apiserver On Node: %s, IP address: %s ", self.host_name, self.node_ip)
 
         if self.etcd_ssl == 'yes':
             common.render(os.path.join(constants.template_dir, "kube-apiserver.service"),

@@ -24,18 +24,12 @@ class Kubelet(Service):
 
     def _deploy_service(self):
 
-        logging.info("Starting To Deploy Kubelet On Node: %s, IP address: %s ", self.host_name, self.node_ip)
+        # logging.info("Starting To Deploy Kubelet On Node: %s, IP address: %s ", self.host_name, self.node_ip)
 
         cni_enabled = False
 
         if self.cni_plugin in ["calico"]:
             cni_enabled = True
-
-        # for node in self.nodes:
-        #     ip = node.get('external_IP')
-        #     user = node.get('ssh_user')
-        #     password = node.get("ssh_password")
-        #     name = node.get("hostname")
 
         if cni_enabled:
             common.render(os.path.join(constants.template_dir, "kubelet.service"),

@@ -41,7 +41,7 @@ class Calico(Service):
         # Get calicoctl
 
     def start(self):
-        logging.info("Creating Calico CNI plugin in cluster")
+        logging.critical("Creating Calico CNI plugin in cluster")
 
         rsh = self.remote_shell
 
