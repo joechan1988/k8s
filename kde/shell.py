@@ -57,7 +57,6 @@ def _get_funcs(obj):
 
 
 def _set_log_level(level_str):
-
     log_level = common.get_log_level(level_str)
     if log_level >= 30:
         logging.basicConfig(level=log_level,
@@ -66,9 +65,9 @@ def _set_log_level(level_str):
                             )
     else:
         logging.basicConfig(level=log_level,
-                        format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
-                        datefmt='%a, %d %b %Y %H:%M:%S',
-                        )
+                            format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+                            datefmt='%a, %d %b %Y %H:%M:%S',
+                            )
 
 
 def _parse_cluster_data(config_path):

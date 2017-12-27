@@ -373,6 +373,7 @@ def reset(**cluster_data):
     # Unmount pods volumes
     # Clear the temp directories
     # Restart docker daemon
+    logging.critical("Starting to clean up the last cluster deployment...")
 
     docker = Docker()
     apiserver = Apiserver()
@@ -457,6 +458,8 @@ def reset(**cluster_data):
 
         docker.start()
         rsh.close()
+
+    logging.critical("Clean-up job finished.")
 
 
 def join():
