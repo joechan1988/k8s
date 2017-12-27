@@ -175,6 +175,7 @@ def _deploy_node(ip, user, password, hostname, service_list, **cluster_data):
         if not ret:
             result["failed_service"].append(service.service_name)
 
+    rsh.prep_dir("/root/.kube/")
     rsh.copy(constants.kde_auth_dir + "admin.kubeconfig", "/root/.kube/config")
 
     if len(result["failed_service"]) != 0:
