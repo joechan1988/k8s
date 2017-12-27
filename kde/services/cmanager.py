@@ -4,10 +4,6 @@ from service import Service
 from kde.util import common
 from kde.templates import constants
 
-tmp_dir = constants.tmp_kde_dir
-k8s_ssl_dir = constants.k8s_ssl_dir
-tmp_bin_dir = constants.tmp_bin_dir
-
 
 class CManager(Service):
     def __init__(self):
@@ -40,7 +36,7 @@ class CManager(Service):
         logging.info("Starting To Deploy Controller Manager On Node: %s, IP address: %s ", self.host_name, self.node_ip)
 
         common.render(os.path.join(constants.template_dir, "kube-controller-manager.service"),
-                      os.path.join(tmp_dir, "kube-controller-manager.service"),
+                      os.path.join(constants.kde_service_dir, "kube-controller-manager.service"),
                       node_ip=self.node_ip,
                       service_cidr=self.service_cidr,
                       cluster_cidr=self.cluster_cidr,
@@ -51,8 +47,8 @@ class CManager(Service):
         rsh = self.remote_shell
         # rsh.connect()
 
-        rsh.copy(tmp_bin_dir+"kube-controller-manager","/usr/bin/")
-        rsh.copy(tmp_dir + "kube-controller-manager.service", "/etc/systemd/system/")
+        rsh.copy(constants.tmp_bin_dir+"kube-controller-manager","/usr/bin/")
+        rsh.copy(constants.kde_service_dir + "kube-controller-manager.service", "/etc/systemd/system/")
 
         rsh.execute("systemctl enable kube-controller-manager")
 

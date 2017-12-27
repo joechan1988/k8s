@@ -4,10 +4,6 @@ from service import Service
 from kde.util import common
 from kde.templates import constants
 
-tmp_dir = constants.tmp_kde_dir
-k8s_ssl_dir = constants.k8s_ssl_dir
-tmp_bin_dir = constants.tmp_bin_dir
-
 
 class Scheduler(Service):
     def __init__(self):
@@ -34,7 +30,7 @@ class Scheduler(Service):
         logging.info("Starting To Deploy Scheduler On Node: %s, IP address: %s ", self.host_name, self.node_ip)
 
         common.render(os.path.join(constants.template_dir, "kube-scheduler.service"),
-                      os.path.join(tmp_dir, "kube-scheduler.service"),
+                      os.path.join(constants.kde_service_dir, "kube-scheduler.service"),
                       node_ip=self.node_ip,
                       )
 
@@ -43,8 +39,8 @@ class Scheduler(Service):
         rsh = self.remote_shell
         # rsh.connect()
 
-        rsh.copy(tmp_bin_dir + "kube-scheduler", "/usr/bin/")
-        rsh.copy(tmp_dir + "kube-scheduler.service", "/etc/systemd/system/")
+        rsh.copy(constants.tmp_bin_dir + "kube-scheduler", "/usr/bin/")
+        rsh.copy(constants.kde_service_dir + "kube-scheduler.service", "/etc/systemd/system/")
 
         rsh.execute("systemctl enable kube-scheduler")
 

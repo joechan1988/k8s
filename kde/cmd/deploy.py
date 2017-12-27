@@ -60,7 +60,7 @@ def pre_check(cluster_data):
 
         # Essential module check: systemctl, nslookup ...
 
-        essential_bins = ["systemctl","docker","sysctl"]
+        essential_bins = ["systemctl", "docker", "sysctl"]
         recommended_bins = ['nslookup']
 
         for bin_name in essential_bins:
@@ -103,8 +103,6 @@ def pre_check(cluster_data):
         if ipv4_forward_check[0] != "1":
             summary["result"] = "failed"
             summary["hint"] = summary["hint"] + "IPV4 Forwarding Is Disabled; "
-
-
 
         # ---- SELinux check ---
         selinux_check = rsh.execute("getenforce")
@@ -177,7 +175,7 @@ def _deploy_node(ip, user, password, hostname, service_list, **cluster_data):
         if not ret:
             result["failed_service"].append(service.service_name)
 
-    rsh.copy(constants.tmp_kde_dir + "admin.kubeconfig", "/root/.kube/config")
+    rsh.copy(constants.kde_auth_dir + "admin.kubeconfig", "/root/.kube/config")
 
     if len(result["failed_service"]) != 0:
         result["result"] = "failure"
@@ -221,6 +219,7 @@ def do(cluster_data):
         ]
     }
 
+    logging.critical("Starting environment precheck...")
     try:
         # validate_cluster_data(cluster_data)
         precheck_result = pre_check(cluster_data)
@@ -228,19 +227,20 @@ def do(cluster_data):
         logging.error(e.message)
         return
 
-    logging.info("Environment check result: "+precheck_result["result"])
+    logging.info("Environment check result: " + precheck_result["result"])
 
     # Prepare local temp directory
 
-    cert_tmp_path = constants.tmp_kde_dir
-    common.prep_conf_dir(cert_tmp_path, "", clear=True)
-    common.prep_conf_dir(constants.tmp_etcd_dir, "", clear=True)
+    kde_auth_dir = constants.kde_auth_dir
+    common.prep_conf_dir(kde_auth_dir, "", clear=True)
+    common.prep_conf_dir(constants.kde_service_dir, "", clear=True)
 
     # Group node by control and worker
     control_nodes = list()
     worker_nodes = list()
     etcd_nodes = list()
     nodes = cluster_data.get("nodes")
+
     for node in nodes:
         if "control" in node.get('role'):
             control_nodes.append(node)
@@ -248,6 +248,9 @@ def do(cluster_data):
             worker_nodes.append(node)
         if "etcd" in node.get('role'):
             etcd_nodes.append(node)
+
+    if len(control_nodes) == 0 or len(etcd_nodes) == 0:
+        raise ClusterConfigError("Initiated cluster should at least have 1 control node and 1 etcd node")
 
     # Get CNI type
     cni_plugin = cluster_data.get("cni").get("plugin")
@@ -261,15 +264,15 @@ def do(cluster_data):
         logging.error(e.message)
 
     # Generate CA cert to temp directory
-    auth.generate_ca_cert(cert_tmp_path)
+    auth.generate_ca_cert(kde_auth_dir)
 
     # Generate Bootstrap Token to temp directory
-    auth.generate_bootstrap_token(cert_tmp_path)
+    auth.generate_bootstrap_token(kde_auth_dir)
 
     # Generate k8s & etcd cert files to temp directory
 
-    auth.generate_etcd_cert(cert_tmp_path, cluster_data)
-    auth.generate_apiserver_cert(cert_tmp_path, cluster_data)
+    auth.generate_etcd_cert(kde_auth_dir, cluster_data)
+    auth.generate_apiserver_cert(kde_auth_dir, cluster_data)
     auth.generate_admin_kubeconfig(cluster_data)
 
     # Start deployment process:

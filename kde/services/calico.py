@@ -5,11 +5,7 @@ from kde.templates import json_schema
 from kde.util import cert_tool, common
 from kde.templates import constants
 
-tmp_dir = constants.tmp_kde_dir
 etcd_ssl_dir = constants.etcd_ssl_dir
-k8s_ssl_dir = constants.k8s_ssl_dir
-tmp_bin_dir = constants.tmp_bin_dir
-
 
 class Calico(Service):
     def __init__(self):
@@ -29,7 +25,7 @@ class Calico(Service):
 
     def _deploy_service(self):
         common.render(os.path.join(constants.template_dir, "calico.yaml"),
-                      os.path.join(tmp_dir, "calico.yaml"),
+                      os.path.join(constants.kde_service_dir, "calico.yaml"),
                       etcd_endpoints=self.etcd_endpoints,
                       etcd_keyfile=self.etcd_keyfile,
                       etcd_cafile=self.etcd_cafile,
@@ -38,8 +34,8 @@ class Calico(Service):
                       )
 
         rsh = self.remote_shell
-        rsh.prep_dir(tmp_dir, clear=False)
-        rsh.copy(tmp_dir + "calico.yaml", tmp_dir + "calico.yaml")
+        rsh.prep_dir(constants.kde_service_dir, clear=False)
+        rsh.copy(constants.kde_service_dir + "calico.yaml", constants.kde_service_dir + "calico.yaml")
 
 
         # Get calicoctl
@@ -56,7 +52,7 @@ class Calico(Service):
                                 --from-file=etcd-key=" + etcd_ssl_dir + "etcd-key.pem"
 
         # Create calico k8s application
-        create_calico_cmd = "kubectl -n kube-system create -f " + tmp_dir + "calico.yaml"
+        create_calico_cmd = "kubectl -n kube-system create -f " + constants.kde_service_dir + "calico.yaml"
 
         outputs = rsh.execute(create_secret_cmd)
         logging.debug(outputs)

@@ -3,8 +3,6 @@ import os
 from kde.templates import json_schema, constants
 from kde.util import cert_tool, common, config_parser
 
-tmp_k8s_dir = constants.tmp_kde_dir
-
 
 def generate_ca_cert(path):
     ca_csr_json = json_schema.k8s_ca_csr
@@ -44,6 +42,8 @@ def generate_apiserver_cert(path, cluster_data):
         if "control" in node.get("role"):
             cert_hosts.append(node.get("external_IP"))
             cert_hosts.append(node.get("hostname"))
+
+    cert_hosts.append(cluster_data.get("kubernetes").get("cluster_kubernetes_svc_ip"))
 
     csr_json["hosts"] = cert_hosts
     cert_tool.generate_json_file(path + "kubernetes-csr.json", csr_json)
@@ -91,25 +91,25 @@ def generate_admin_kubeconfig(cluster_data):
 
     # generate admin cert files
     admin_json = json_schema.k8s_admin_csr
-    tmp_k8s_dir = constants.tmp_kde_dir
-    csr_file_path = constants.tmp_kde_dir + "admin-csr.json"
+    kde_auth_dir = constants.kde_auth_dir
+    csr_file_path = constants.kde_auth_dir + "admin-csr.json"
 
     cert_tool.generate_json_file(csr_file_path, admin_json)
-    cert_tool.gen_cert_files(ca_dir=tmp_k8s_dir, profile='kubernetes',
-                             csr_file=tmp_k8s_dir + 'admin-csr.json',
+    cert_tool.gen_cert_files(ca_dir=kde_auth_dir, profile='kubernetes',
+                             csr_file=kde_auth_dir + 'admin-csr.json',
                              cert_name='admin',
-                             dest_dir=tmp_k8s_dir, debug=constants.debug)
+                             dest_dir=kde_auth_dir, debug=constants.debug)
 
     cmds = list([])
     cmds.append("kubectl config set-cluster kubernetes \
-              --certificate-authority=" + tmp_k8s_dir + "ca.pem \
+              --certificate-authority=" + kde_auth_dir + "ca.pem \
               --embed-certs=true \
               --server=" + server_url)
 
     cmds.append("kubectl config set-credentials admin \
-              --client-certificate=" + tmp_k8s_dir + "admin.pem \
+              --client-certificate=" + kde_auth_dir + "admin.pem \
               --embed-certs=true \
-              --client-key=" + tmp_k8s_dir + "admin-key.pem")
+              --client-key=" + kde_auth_dir + "admin-key.pem")
 
     cmds.append("kubectl config set-context kubernetes \
               --cluster=kubernetes \
@@ -117,7 +117,7 @@ def generate_admin_kubeconfig(cluster_data):
 
     cmds.append("kubectl config use-context kubernetes")
 
-    cmds.append("cp -f /root/.kube/config " + tmp_k8s_dir + "admin.kubeconfig")
+    cmds.append("cp -f /root/.kube/config " + kde_auth_dir + "admin.kubeconfig")
 
     for cmd in cmds:
         common.shell_exec(cmd, shell=True, debug=constants.debug)

@@ -5,10 +5,6 @@ from kde.templates import json_schema
 from kde.util import cert_tool, common
 from kde.templates import constants
 
-tmp_dir = constants.tmp_kde_dir
-k8s_ssl_dir = constants.k8s_ssl_dir
-tmp_bin_dir = constants.tmp_bin_dir
-
 
 class Apiserver(Service):
     def __init__(self):
@@ -16,7 +12,7 @@ class Apiserver(Service):
         self.service_name = 'kube-apiserver'
         self.node_ip = ""
         self.host_name = ""
-        self.tmp_cert_path = tmp_dir
+        self.tmp_cert_path = constants.kde_auth_dir
         self.remote_shell = common.RemoteShell()
 
     def configure(self, **configs):
@@ -67,13 +63,13 @@ class Apiserver(Service):
 
         csr_json["hosts"] = cert_hosts
 
-        cert_tool.generate_json_file(tmp_dir + "kubernetes-csr.json", csr_json)
+        cert_tool.generate_json_file(constants.kde_auth_dir + "kubernetes-csr.json", csr_json)
 
         logging.info("Generating kube-apiserver Cert Files...")
-        cert_tool.gen_cert_files(ca_dir=tmp_dir, profile='kubernetes',
-                                 csr_file=tmp_dir + 'kubernetes-csr.json',
+        cert_tool.gen_cert_files(ca_dir=constants.kde_auth_dir, profile='kubernetes',
+                                 csr_file=constants.kde_auth_dir + 'kubernetes-csr.json',
                                  cert_name='kubernetes',
-                                 dest_dir=tmp_dir, debug=constants.debug)
+                                 dest_dir=constants.kde_auth_dir, debug=constants.debug)
 
     # @staticmethod
     # def _generate_bootstrap_token():
@@ -88,7 +84,7 @@ class Apiserver(Service):
 
         if self.etcd_ssl == 'yes':
             common.render(os.path.join(constants.template_dir, "kube-apiserver.service"),
-                          os.path.join(tmp_dir, "kube-apiserver.service"),
+                          os.path.join(constants.kde_service_dir, "kube-apiserver.service"),
                           node_ip=self.node_ip,
                           etcd_endpoints=self.etcd_endpoints,
                           etcd_cafile=self.etcd_cafile,
@@ -99,7 +95,7 @@ class Apiserver(Service):
                           )
         else:
             common.render(os.path.join(constants.template_dir, "kube-apiserver.service"),
-                          os.path.join(tmp_dir, "kube-apiserver.service"),
+                          os.path.join(constants.kde_service_dir, "kube-apiserver.service"),
                           etcd_endpoints=self.etcd_endpoints,
                           etcd_cafile="",
                           etcd_keyfile="",
@@ -119,8 +115,8 @@ class Apiserver(Service):
         rsh = self.remote_shell
         rsh.prep_dir(self.ssl_dir, clear=True)
 
-        rsh.copy(tmp_bin_dir + "kube-apiserver", "/usr/bin/")
-        rsh.copy(tmp_dir + "kube-apiserver.service", "/etc/systemd/system/")
+        rsh.copy(constants.tmp_bin_dir + "kube-apiserver", "/usr/bin/")
+        rsh.copy(constants.kde_service_dir + "kube-apiserver.service", "/etc/systemd/system/")
         rsh.copy(self.tmp_cert_path + "token.csv", self.config_dir)
         rsh.copy(self.tmp_cert_path + "ca.pem", self.ca_cert)
         rsh.copy(self.tmp_cert_path + "ca-key.pem", self.ca_key)

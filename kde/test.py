@@ -7,7 +7,7 @@ from cmd import auth, deploy
 from services.etcd import Etcd
 from services.apiserver import Apiserver
 from services.kubelet import Kubelet
-from templates import constants
+from kde.templates import constants
 import shell
 import random, string
 import logging
@@ -120,12 +120,16 @@ def test_shell():
 
 
 def test_bak_etcd():
-    bak_dir_name = "etcd_bak_"+"".join(random.sample(string.ascii_letters + string.digits, 8))
+    bak_dir_name = "etcd_bak_" + "".join(random.sample(string.ascii_letters + string.digits, 8))
     print(bak_dir_name)
 
 
+def test_prep_dir():
+    common.prep_conf_dir(constants.kde_service_dir,"", clear=True)
+
+
 def main():
-    test_bak_etcd()
+    test_prep_dir()
 
 
 if __name__ == '__main__':

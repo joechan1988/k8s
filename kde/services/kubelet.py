@@ -4,10 +4,6 @@ from service import Service
 from kde.util import common
 from kde.templates import constants
 
-tmp_dir = constants.tmp_kde_dir
-k8s_ssl_dir = constants.k8s_ssl_dir
-tmp_bin_dir = constants.tmp_bin_dir
-
 
 class Kubelet(Service):
     def __init__(self):
@@ -43,14 +39,14 @@ class Kubelet(Service):
 
         if cni_enabled:
             common.render(os.path.join(constants.template_dir, "kubelet.service"),
-                          os.path.join(tmp_dir, "kubelet.service"),
+                          os.path.join(constants.kde_service_dir, "kubelet.service"),
                           node_ip=self.node_ip,
                           cluster_dns_svc_ip=self.cluster_dns_svc_ip,
                           cluster_dns_domain=self.cluster_dns_domain,
                           cni="--network-plugin=cni")
         else:
             common.render(os.path.join(constants.template_dir, "kubelet.service"),
-                          os.path.join(tmp_dir, "kubelet.service"),
+                          os.path.join(constants.kde_service_dir, "kubelet.service"),
                           node_ip=self.node_ip,
                           cluster_dns_svc_ip=self.cluster_dns_svc_ip,
                           cluster_dns_domain=self.cluster_dns_domain,
@@ -60,9 +56,9 @@ class Kubelet(Service):
         # rsh.connect()
 
         logging.info("Copy kubelet Config Files To Node: " + self.host_name)
-        rsh.copy(tmp_bin_dir + "kubelet", "/usr/bin/")
-        rsh.copy(tmp_dir + "kubelet.service", "/etc/systemd/system/")
-        rsh.copy(tmp_dir + "admin.kubeconfig", "/etc/kubernetes/")
+        rsh.copy(constants.tmp_bin_dir + "kubelet", "/usr/bin/")
+        rsh.copy(constants.kde_service_dir + "kubelet.service", "/etc/systemd/system/")
+        rsh.copy(constants.kde_auth_dir + "admin.kubeconfig", "/etc/kubernetes/")
 
         rsh.prep_dir("/var/lib/kubelet/", clear=True)
         rsh.execute("systemctl enable kubelet")

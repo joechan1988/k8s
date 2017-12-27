@@ -91,7 +91,6 @@ def test_control_node_deploy():
             etcd.remote_shell = rsh
             etcd.node_ip = ip
             etcd.host_name = name
-            etcd.tmp_cert_path = tmp_k8s_dir
             etcd.configure(**configs.data)
             etcd.deploy()
 
