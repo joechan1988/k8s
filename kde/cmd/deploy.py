@@ -96,7 +96,8 @@ def pre_check(cluster_data):
 
         if len(leftover_dirs):
             summary["result"] = "failed"
-            summary["hint"] = summary["hint"] + "Fount non-empty directories: {0} on node: {1}".format(leftover_dir_names,name)
+            summary["hint"] = summary["hint"] + "Fount non-empty directories: {0} on node: {1}".format(
+                leftover_dir_names, name)
 
         # --- IPV4 Forwarding Check ---
         ipv4_forward_check = rsh.execute("sysctl net.ipv4.conf.all.forwarding -b")
@@ -169,7 +170,7 @@ def _deploy_node(ip, user, password, hostname, service_list, **cluster_data):
         service.remote_shell = rsh
         service.node_ip = ip
         service.host_name = hostname
-        service.configure(**cluster_data)
+        # service.configure(**cluster_data)
         service.deploy()
         ret = service.start()
         if not ret:
@@ -219,6 +220,13 @@ def do(cluster_data):
             # }
         ]
     }
+
+    def _sum_results(results_dict):
+        for item in results_dict["nodes"]:
+            if item["result"] == "failure":
+                results_dict["summary"] = "failure"
+                return
+        results_dict["summary"] = "success"
 
     logging.critical("Starting environment precheck...")
     try:
@@ -287,12 +295,9 @@ def do(cluster_data):
     kubelet = Kubelet()
     calico = Calico()
 
-    def _sum_results(results_dict):
-        for item in results_dict["nodes"]:
-            if item["result"] == "failure":
-                results_dict["summary"] = "failure"
-                return
-        results_dict["summary"] = "success"
+    total_service_list = [docker, apiserver, cmanager, scheduler, proxy, etcd, kubelet, calico]
+    for service in total_service_list:
+        service.configure(**cluster_data)
 
         # Attempt to deploy etcd node
 
@@ -302,7 +307,7 @@ def do(cluster_data):
         password = node.get("ssh_password")
         name = node.get("hostname")
 
-        service_list = [etcd]
+        service_list = [docker, etcd]
         result = _deploy_node(ip, user, password, name, service_list, **cluster_data)
         results["nodes"].append(result)
 
@@ -318,7 +323,10 @@ def do(cluster_data):
         password = node.get("ssh_password")
         name = node.get("hostname")
 
-        service_list = [docker, apiserver, cmanager, scheduler, kubelet, proxy]
+        if node in etcd_nodes:
+            service_list = [apiserver, cmanager, scheduler, kubelet, proxy]
+        else:
+            service_list = [docker, apiserver, cmanager, scheduler, kubelet, proxy]
         result = _deploy_node(ip, user, password, name, service_list, **cluster_data)
         results["nodes"].append(result)
 
@@ -337,7 +345,10 @@ def do(cluster_data):
         password = node.get("ssh_password")
         name = node.get("hostname")
 
-        service_list = [docker, kubelet, proxy]
+        if node in etcd_nodes:
+            service_list = [kubelet, proxy]
+        else:
+            service_list = [docker, kubelet, proxy]
 
         result = _deploy_node(ip, user, password, name, service_list, **cluster_data)
         results["nodes"].append(result)
