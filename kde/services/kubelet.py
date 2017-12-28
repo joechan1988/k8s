@@ -47,14 +47,13 @@ class Kubelet(Service):
                           cni="")
 
         rsh = self.remote_shell
-        # rsh.connect()
+
+        rsh.prep_dir("/var/lib/kubelet/", clear=True)
+        rsh.prep_dir(constants.k8s_ssl_dir)
 
         logging.info("Copy kubelet Config Files To Node: " + self.host_name)
         rsh.copy(constants.tmp_bin_dir + "kubelet", "/usr/bin/")
         rsh.copy(constants.kde_service_dir + "kubelet.service", "/etc/systemd/system/")
         rsh.copy(constants.kde_auth_dir + "admin.kubeconfig", "/etc/kubernetes/")
 
-        rsh.prep_dir("/var/lib/kubelet/", clear=True)
         rsh.execute("systemctl enable kubelet")
-
-        # rsh.close()
