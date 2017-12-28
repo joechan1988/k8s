@@ -74,13 +74,13 @@ class Etcd(Service):
         # rsh.connect()
 
         cmd = "docker run -d --name kde-etcd \
-                -v {keyfile}:{keyfile}\
+                -v {keyfile}:{keyfile} \
                 -v {cafile}:{cafile} \
                 -v {certfile}:{certfile} \
                 -v /var/lib/etcd:/var/lib/etcd \
               --net=host --privileged --restart=on-failure \
                 gcr.io/google-containers/etcd:3.1.11 etcd \
-              --name=k8s-master1 \
+              --name={name} \
               --cert-file={certfile} \
               --key-file={keyfile} \
               --peer-cert-file={certfile} \
@@ -96,7 +96,7 @@ class Etcd(Service):
                                                keyfile=self.keyfile,
                                                cafile=self.cafile,
                                                certfile=self.certfile,
-                                               node_ip=self.node_ip)
+                                               node_ip=self.node_ip,name=self.host_name)
 
         logging.info(cmd)
         # rsh.execute("systemctl daemon-reload")
