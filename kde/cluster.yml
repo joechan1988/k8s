@@ -1,4 +1,4 @@
-log_level: warning  #debug,info,warning,error,critical
+log_level: info  #debug,info,warning,error,critical
 
 FQDN: "k8s.wocloud.org"
 external_VIP: "1.1.1.1"  # IP for external access to cluster; should be either a load-balancer IP or a keepalived VIP

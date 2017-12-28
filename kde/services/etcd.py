@@ -78,7 +78,7 @@ class Etcd(Service):
                 -v {cafile}:{cafile} \
                 -v {certfile}:{certfile} \
                 -v /var/lib/etcd:/var/lib/etcd \
-              --net=host --privileged --restart=yes \
+              --net=host --privileged --restart=on-failure \
                 gcr.io/google-containers/etcd:3.1.11 etcd \
               --name=k8s-master1 \
               --cert-file={certfile} \
