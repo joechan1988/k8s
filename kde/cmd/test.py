@@ -13,7 +13,7 @@ from kde.services import *
 # from services.proxy import Proxy
 # from services.scheduler import Scheduler
 from kde.templates import constants
-from kde.util import config_parser
+from kde.util import config_parser, common
 from kde.util.common import RemoteShell
 from kde.util.exception import *
 
@@ -133,9 +133,15 @@ def test_prep_binaries():
         logging.critical(e.message)
 
 
+def test_recover_cert():
+    cmd = """ kubectl -n kube-system get secret  calico-etcd-secrets -o json \
+            |jq '.data."etcd-ca"'| sed 's/\"//g'| base64 --decode > {0} """.format("/tmp/ca.pem")
+    out = common.shell_exec(cmd, shell=True, output=True)
+    print(out)
+
 
 def main():
-    test_validate_cluster_data()
+    test_recover_cert()
 
 
 if __name__ == '__main__':

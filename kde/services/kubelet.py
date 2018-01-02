@@ -16,6 +16,7 @@ class Kubelet(Service):
         self.cluster_dns_svc_ip = k8s_data.get("cluster_dns_svc_ip")
         self.cluster_dns_domain = k8s_data.get("cluster_dns_domain")
         self.cni_plugin = cluster_data.get("cni").get("plugin")
+        self.config_dir = k8s_data.get("config_directory")
         #
         # nodes = cluster_data.get('nodes')
         # for node in nodes:
@@ -37,6 +38,8 @@ class Kubelet(Service):
                           node_ip=self.node_ip,
                           cluster_dns_svc_ip=self.cluster_dns_svc_ip,
                           cluster_dns_domain=self.cluster_dns_domain,
+                          kubeconfig=self.config_dir+"admin.kubeconfig",
+                          cert_dir = self.config_dir+"ssl/",
                           cni="--network-plugin=cni")
         else:
             common.render(os.path.join(constants.template_dir, "kubelet.service"),
@@ -44,6 +47,8 @@ class Kubelet(Service):
                           node_ip=self.node_ip,
                           cluster_dns_svc_ip=self.cluster_dns_svc_ip,
                           cluster_dns_domain=self.cluster_dns_domain,
+                          kubeconfig=self.config_dir+"admin.kubeconfig",
+                          cert_dir = self.config_dir+"ssl/",
                           cni="")
 
         rsh = self.remote_shell

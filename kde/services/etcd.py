@@ -111,3 +111,11 @@ class Etcd(Service):
         else:
             logging.critical("Finished Starting Service: " + self.service_name + " On Node: " + self.host_name)
             return True
+
+    def stop(self):
+        logging.critical("Stopping " + self.service_name + " Service On Node: " + self.host_name)
+
+        rsh =self.remote_shell
+
+        stop_cmd = "docker rm -f -v kde-etcd"
+        rsh.execute(stop_cmd)

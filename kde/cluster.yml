@@ -5,19 +5,20 @@ external_VIP: "1.1.1.1"  # IP for external access to cluster; should be either a
 
 nodes:
 # role: control; worker; etcd;
-#  - hostname: k8s-master1
-#    role: [control]
-#    external_IP: "192.168.1.13"
-#    ssh_user: "root"
-#    ssh_password: "123456"
+  - hostname: k8s-master1
+    role: [control]
+    external_IP: "192.168.1.204"
+    ssh_user: "root"
+    ssh_password: "123456"
 #  - hostname: k8s-master2
 #    role: []
 #    external_IP: 192.168.1.202
-  - hostname: k8s-minion1
-    role: [control,etcd]
-    external_IP: "192.168.1.203"
-    ssh_user: "root"
-    ssh_password: "123456"
+#  - hostname: k8s-minion1
+#    role: [control,etcd]
+#    external_IP: "192.168.1.203"
+#    ssh_user: "root"
+#    ssh_password: "123456"
+
 
 kubernetes:
   version: "1.8.0"
@@ -61,3 +62,5 @@ binaries:
 
 images:
   path: ""
+
+admin_kubeconfig: "/etc/kde/auth/admin.kubeconfig"

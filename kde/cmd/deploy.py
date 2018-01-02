@@ -11,14 +11,6 @@ from kde.util.exception import *
 from kde.services import *
 
 
-#
-# logging.basicConfig(level=logging.INFO,
-#                     format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
-#                     datefmt='%a, %d %b %Y %H:%M:%S',
-#                     )
-
-
-
 def pre_check(cluster_data):
     """
     Environment check before starting deployment procedure.
@@ -30,7 +22,9 @@ def pre_check(cluster_data):
                 hint: detailed message
     """
 
-    summary = dict({"result": "passed",
+    # TODO: ntpd check
+
+    summary = dict({"result": "",
                     "node": "",
                     "hint": ""
                     })
@@ -60,7 +54,7 @@ def pre_check(cluster_data):
 
         # Essential module check: systemctl, nslookup ...
 
-        essential_bins = ["systemctl", "docker", "sysctl"]
+        essential_bins = ["systemctl", "docker", "sysctl", "jq"]
         recommended_bins = ['nslookup']
 
         for bin_name in essential_bins:
@@ -96,7 +90,7 @@ def pre_check(cluster_data):
 
         if len(leftover_dirs):
             summary["result"] = "failed"
-            summary["hint"] = summary["hint"] + "Fount non-empty directories: {0} on node: {1}".format(
+            summary["hint"] = summary["hint"] + "Fount non-empty directories: {0} on node: {1}; ".format(
                 leftover_dir_names, name)
 
         # --- IPV4 Forwarding Check ---
@@ -107,7 +101,7 @@ def pre_check(cluster_data):
 
         # ---- SELinux check ---
         selinux_check = rsh.execute("getenforce")
-        if selinux_check[0] == "Enforcing":
+        if "Enforcing" in selinux_check[0]:
             summary["result"] = "failed"
             summary["hint"] = summary["hint"] + "SElinux is set Enabled; "
 
@@ -115,6 +109,8 @@ def pre_check(cluster_data):
 
         if summary["result"] == "failed":
             raise PreCheckError(summary["hint"])
+        else:
+            summary["result"] = "passed"
 
         return summary
 
@@ -327,6 +323,7 @@ def do(cluster_data):
             service_list = [apiserver, cmanager, scheduler, kubelet, proxy]
         else:
             service_list = [docker, apiserver, cmanager, scheduler, kubelet, proxy]
+
         result = _deploy_node(ip, user, password, name, service_list, **cluster_data)
         results["nodes"].append(result)
 
@@ -371,6 +368,15 @@ def do(cluster_data):
 
     _sum_results(results)
 
+    # TODO: save ca,cert files to k8s cluster
+
+    save_cert_cmd = "kubectl -n kube-system create secret generic k8s-cert-bak \
+                                --from-file=ca=" + kde_auth_dir + "ca.pem \
+                                --from-file=cert=" + kde_auth_dir + "kubernetes.pem \
+                                --from-file=key=" + kde_auth_dir + "kubernetes-key.pem"
+
+    common.shell_exec(save_cert_cmd, shell=True)
+
     return results
 
 
@@ -385,6 +391,7 @@ def reset(**cluster_data):
     # Unmount pods volumes
     # Clear the temp directories
     # Restart docker daemon
+
     logging.critical("Starting to clean up the last cluster deployment...")
 
     docker = Docker()
@@ -443,11 +450,10 @@ def reset(**cluster_data):
             service.host_name = name
             service.remote_shell = rsh
             service.stop()
-            rsh.execute("systemctl disable " + service.service_name)
+            # rsh.execute("systemctl disable " + service.service_name)
 
         bak_dir_name = "etcd_bak_" + "".join(random.sample(string.ascii_letters + string.digits, 8))
         rsh.execute("mv /var/lib/etcd/ /var/lib/" + bak_dir_name + "/")
-        rsh.execute("rm -rf /var/lib/etcd/")
 
     for node in worker_nodes:
         ip = node.get('external_IP')
@@ -474,10 +480,174 @@ def reset(**cluster_data):
     logging.critical("Clean-up job finished.")
 
 
-def join():
+def add_host(**cluster_data):
     """
-    Join a existing kubernetes cluster
+    Add new hosts to a existing kubernetes cluster
 
     :return:
     """
-    pass
+    logging.critical("Adding new hosts to the initiated cluster...")
+
+    admin_kubeconfig_path = cluster_data.get("admin_kubeconfig")
+    if admin_kubeconfig_path is None:
+        raise ClusterConfigError("Admin kubeconfig file path is misconfigured")
+    if not os.path.exists(admin_kubeconfig_path):
+        raise ClusterConfigError("Admin kubeconfig file not found in configured path")
+
+    if admin_kubeconfig_path != constants.kde_auth_dir + "admin.kubeconfig":
+        common.shell_exec("cp -f {0} {1}".format(admin_kubeconfig_path, constants.kde_auth_dir + "admin.kubeconfig"))
+
+    results = {
+        "summary": "failure",  # success or failure
+        "nodes": [
+            # {
+            #     "node_name": "",
+            #     "node_ip": "",
+            #     "result": "failure"
+            # }
+        ]
+    }
+
+    def _sum_results(results_dict):
+        for item in results_dict["nodes"]:
+            if item["result"] == "failure":
+                results_dict["summary"] = "failure"
+                return
+        results_dict["summary"] = "success"
+
+    logging.critical("Starting environment precheck...")
+    try:
+        # validate_cluster_data(cluster_data)
+        precheck_result = pre_check(cluster_data)
+    except BaseError as e:
+        logging.error(e.message)
+        return
+    if precheck_result is not None:
+        logging.info("Environment check result: " + precheck_result["result"])
+
+    # Prepare local temp directory
+
+    kde_auth_dir = constants.kde_auth_dir
+
+    # Group node by control and worker
+    control_nodes = list()
+    worker_nodes = list()
+    # etcd_nodes = list()
+    nodes = cluster_data.get("nodes")
+
+    for node in nodes:
+        if "control" in node.get('role'):
+            control_nodes.append(node)
+        if "worker" in node.get('role'):
+            worker_nodes.append(node)
+
+    # Check kde config files; if not exists, recover from k8s cluster
+    if len(control_nodes) > 0:
+        if (not os.path.exists(constants.kde_auth_dir + "ca.pem") or
+                not os.path.exists(constants.kde_auth_dir + "kubernetes-key.pem") or
+                not os.path.exists(constants.kde_auth_dir + "kubernetes.pem")):
+            common.prep_conf_dir(constants.kde_auth_dir, "", clear=False)
+
+            recover_cmd0 = """ kubectl -n kube-system get secret k8s-cert-bak -o json \
+                                    |jq '.data.\"ca\"'   \
+                                    | sed 's/\"//g'| base64 --decode >{0} """.format(
+                constants.kde_auth_dir + "ca.pem")
+            recover_cmd1 = """ kubectl -n kube-system get secret k8s-cert-bak -o json \
+                                    |jq '.data.\"cert\"'   \
+                                    | sed 's/\"//g'| base64 --decode >{0} """.format(
+                constants.kde_auth_dir + "kubernetes.pem")
+            recover_cmd2 = """ kubectl -n kube-system get secret k8s-cert-bak -o json \
+                                    |jq '.data.\"key\"'   \
+                                    | sed 's/\"//g'| base64 --decode >{0} """.format(
+                constants.kde_auth_dir + "kubernetes-key.pem")
+
+            common.shell_exec(recover_cmd0, shell=True)
+            common.shell_exec(recover_cmd1, shell=True)
+            common.shell_exec(recover_cmd2, shell=True)
+
+    # Get CNI type
+    cni_plugin = cluster_data.get("cni").get("plugin")
+
+    # Prepare binaries to temp directory
+
+    tmp_bin_path = cluster_data.get("binaries").get("path")
+    try:
+        prep_binaries(tmp_bin_path, cluster_data)
+    except BaseError as e:
+        logging.error(e.message)
+
+    # Start deployment process:
+
+    docker = Docker()
+    apiserver = Apiserver()
+    cmanager = CManager()
+    scheduler = Scheduler()
+    proxy = Proxy()
+    etcd = Etcd()
+    kubelet = Kubelet()
+    calico = Calico()
+
+    total_service_list = [docker, apiserver, cmanager, scheduler, proxy, etcd, kubelet, calico]
+    for service in total_service_list:
+        service.configure(**cluster_data)
+
+        # Attempt to deploy controller node
+    for node in control_nodes:
+        ip = node.get('external_IP')
+        user = node.get('ssh_user')
+        password = node.get("ssh_password")
+        name = node.get("hostname")
+
+        service_list = [docker, apiserver, cmanager, scheduler, kubelet, proxy]
+        result = _deploy_node(ip, user, password, name, service_list, **cluster_data)
+        results["nodes"].append(result)
+
+        if result["result"] == "success":
+            common.shell_exec("kubectl label node " + ip + " node-role.kubernetes.io/master=", shell=True)
+
+            # Summary controller node deploy results.If failure, stop the whole deployment
+    _sum_results(results)
+    if results["summary"] == "failure":
+        return results
+
+        # Attempt to deploy worker node
+    for node in worker_nodes:
+        ip = node.get('external_IP')
+        user = node.get('ssh_user')
+        password = node.get("ssh_password")
+        name = node.get("hostname")
+
+        service_list = [docker, kubelet, proxy]
+
+        result = _deploy_node(ip, user, password, name, service_list, **cluster_data)
+        results["nodes"].append(result)
+
+        # Attempt to deploy CNI plugin
+    if cni_plugin == "calico":
+        for node in control_nodes:
+            ip = node.get('external_IP')
+            user = node.get('ssh_user')
+            password = node.get("ssh_password")
+            name = node.get("hostname")
+
+            service_list = [calico]
+            result = _deploy_node(ip, user, password, name, service_list, **cluster_data)
+            if result["result"] == "failure":
+                logging.error(
+                    "Failed to deploy calico cni plugin on node: {0}. Please try deploying it manually.".format(node))
+
+            break
+
+    _sum_results(results)
+
+    return results
+
+
+def delete_host(host_name):
+    """
+    Delete a node in cluster
+
+    :param host_name:
+    :return:
+    """
+

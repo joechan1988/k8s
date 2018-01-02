@@ -10,9 +10,8 @@ ExecStart=/usr/bin/kubelet \
   --address=$node_ip \
   --hostname-override=$node_ip \
   --pod-infra-container-image=registry.access.redhat.com/rhel7/pod-infrastructure:latest \
-  --experimental-bootstrap-kubeconfig=/etc/kubernetes/bootstrap.kubeconfig \
-  --kubeconfig=/etc/kubernetes/admin.kubeconfig \
-  --cert-dir=/etc/kubernetes/ssl \
+  --kubeconfig=$kubeconfig \
+  --cert-dir=$cert_dir \
   --cluster_dns=$cluster_dns_svc_ip \
   --cluster_domain=$cluster_dns_domain \
   --hairpin-mode promiscuous-bridge \

@@ -43,6 +43,14 @@ class Subcommands(object):
 
         deploy.reset(**cluster_data)
 
+    @common.cmd_help("Add new hosts to existing cluster")
+    def add_host(self,args,**cluster_data):
+
+        try:
+            deploy.add_host(**cluster_data)
+        except exception.BaseError as e:
+            logging.error(e.message)
+
     # @common.arg('--config', default=constants.cluster_cfg_path, help="Default config file path")
     def test(self, args):
         print(args.config)
