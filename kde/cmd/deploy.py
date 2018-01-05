@@ -1,14 +1,63 @@
 import os
 import logging
 import string
-
+import multiprocessing
 import auth
 import random
+import datetime
 from kde.util import common, cert_tool, config_parser
 from kde.templates import constants, json_schema
 from kde.util.common import RemoteShell
 from kde.util.exception import *
 from kde.services import *
+
+
+def _get_host_time(ip, user, password):
+    rsh = RemoteShell(ip, user, password)
+    rsh.connect()
+
+    ret = rsh.execute("date +'%Y-%m-%d %H:%M:%S'")
+    rsh.close()
+
+    date_time = datetime.datetime.strptime(ret[0].replace("\n", ""), '%Y-%m-%d %H:%M:%S')
+
+    return date_time
+
+
+def _check_host_time(cluster_data):
+    nodes = cluster_data.get("nodes")
+
+    pool = multiprocessing.Pool(len(nodes))
+    pool_results = list()
+    host_time_list = list()
+    for node in nodes:
+        ip = node.get('external_IP')
+        user = node.get('ssh_user')
+        password = node.get("ssh_password")
+        name = node.get("hostname")
+
+        ret = pool.apply_async(_get_host_time, args=(ip, user, password))
+
+        pool_results.append(ret)
+
+    pool.close()
+    pool.join()
+
+    for pool_result in pool_results:
+        host_time_list.append(pool_result.get())
+
+    host_time_diff = 0
+    # print(host_time_list)
+    for host_time in host_time_list[1:]:
+        host_time_diff = (host_time - host_time_list[0]).seconds if host_time > host_time_list[0] \
+            else (host_time_list[0] - host_time).seconds
+
+    if host_time_diff > 60:
+        # raise PreCheckError(
+        #     "Time settings difference between nodes is larger than 1 minutes.Check ntp service installation")
+        return False
+    else:
+        return True
 
 
 def pre_check(cluster_data):
@@ -22,11 +71,15 @@ def pre_check(cluster_data):
                 hint: detailed message
     """
 
-    # TODO: ntpd check
-
     summary = dict({"result": "",
-                    "node": "",
-                    "hint": ""
+                    "nodes": [
+                        # {
+                        #     "name": "",
+                        #     "passed": "",
+                        #     "details": ""
+                        # }
+                    ],
+                    "message": ""
                     })
 
     nodes = cluster_data.get("nodes")
@@ -37,13 +90,18 @@ def pre_check(cluster_data):
                                 "/var/lib/etcd/"
                                 ]
 
+    # SSH reachability check
     for node in nodes:
         ip = node.get('external_IP')
         user = node.get('ssh_user')
         password = node.get("ssh_password")
         name = node.get("hostname")
 
-        summary["node"] = "Node IP: " + ip + "; Node Name: " + name
+        node_result = {
+            "name": name,
+            "passed": "",
+            "details": ""
+        }
 
         # SSH Connection Reachability Check
         rsh = RemoteShell(ip, user, password)
@@ -60,23 +118,27 @@ def pre_check(cluster_data):
         for bin_name in essential_bins:
             check_result = common.check_preinstalled_binaries(bin_name)
             if not check_result:
-                summary["result"] = "failed"
-                summary["hint"] = summary["hint"] + "Module or component {0} is not found.".format(bin_name)
+                node_result["passed"] = "no"
+                node_result["details"] = node_result["details"] + "Module or component {0} is not found.".format(
+                    bin_name)
 
         for bin_name in recommended_bins:
             check_result = common.check_preinstalled_binaries(bin_name)
             if not check_result:
                 logging.warning("Warning: Module or component {0} is not found.".format(bin_name))
-                summary["hint"] = summary["hint"] + "Module or component {0} is not found.".format(bin_name)
+                node_result["details"] = node_result["details"] + "Module or component {0} is not found.".format(
+                    bin_name)
+                # summary["hint"] = summary["hint"] + "Module or component {0} is not found.".format(bin_name)
 
         # ---Docker Version Check ---
         docker_version = rsh.execute(docker_version_cmd)
-        if "1.12" not in docker_version[0]:
-            summary["result"] = "failed"
-            summary["hint"] = "Incompatible Docker version on node: " + name + ", Node IP: " + ip + "; \n"
+
         if "Cannot connect to the Docker daemon" in docker_version[0]:
-            summary["result"] = "failed"
-            summary["hint"] = "Docker daemon may not running On node: " + name + ", Node IP: " + ip + "; \n"
+            node_result["passed"] = "no"
+            node_result["details"] = node_result["details"] + "Docker daemon is probably not running. "
+        elif "1.12" not in docker_version[0]:
+            node_result["passed"] = "no"
+            node_result["details"] = node_result["details"] + "Incompatible docker version; "
 
         # ---Left-over Directories Check ---
         leftover_dirs = list([])
@@ -89,30 +151,57 @@ def pre_check(cluster_data):
                 leftover_dir_names = leftover_dir_names + directory + ", "
 
         if len(leftover_dirs):
-            summary["result"] = "failed"
-            summary["hint"] = summary["hint"] + "Fount non-empty directories: {0} on node: {1}; ".format(
+            node_result["passed"] = "no"
+            node_result["details"] = node_result["details"] + "Fount non-empty directories: {0} ;".format(
                 leftover_dir_names, name)
+
+            # summary["result"] = "failed"
+            # summary["hint"] = summary["hint"] + "Fount non-empty directories: {0} on node: {1}; ".format(
+            #     leftover_dir_names, name)
 
         # --- IPV4 Forwarding Check ---
         ipv4_forward_check = rsh.execute("sysctl net.ipv4.conf.all.forwarding -b")
         if ipv4_forward_check[0] != "1":
-            summary["result"] = "failed"
-            summary["hint"] = summary["hint"] + "IPV4 Forwarding Is Disabled; "
+            node_result["passed"] = "no"
+            node_result["details"] = node_result["details"] + "IPV4 Forwarding Is Disabled; "
+
+            # summary["result"] = "failed"
+            # summary["hint"] = summary["hint"] + "IPV4 Forwarding Is Disabled; "
 
         # ---- SELinux check ---
         selinux_check = rsh.execute("getenforce")
         if "Enforcing" in selinux_check[0]:
-            summary["result"] = "failed"
-            summary["hint"] = summary["hint"] + "SElinux is set Enabled; "
+            node_result["passed"] = "no"
+            node_result["details"] = node_result["details"] + "SElinux is set Enabled; "
 
         rsh.close()
 
-        if summary["result"] == "failed":
-            raise PreCheckError(summary["hint"])
-        else:
-            summary["result"] = "passed"
+        summary["nodes"].append(node_result)
 
-        return summary
+    # Summary nodes check result
+
+    for node_result in summary["nodes"]:
+        if node_result["passed"] == "no":
+            summary["result"] = "failed"
+            summary["message"] = "Environment check on node '{node_name}' " \
+                                 "failed. Details: {details} ".format(
+                node_name=node_result["name"],
+                details=node_result["details"])
+            break
+
+    # host time synchronization check
+
+    if not _check_host_time(cluster_data):
+        summary["result"] = "failed"
+        summary["message"] = summary["message"] + \
+                             "Time settings difference between nodes is larger than 1 minutes.Check ntp service installation. "
+
+    if summary["result"] == "failed":
+        raise PreCheckError(summary["message"])
+    else:
+        summary["result"] = "passed"
+
+    return summary
 
 
 def prep_binaries(path, cluster_data):
@@ -368,7 +457,7 @@ def do(cluster_data):
 
     _sum_results(results)
 
-    # TODO: save ca,cert files to k8s cluster
+    # save ca,cert files to k8s cluster
 
     save_cert_cmd = "kubectl -n kube-system create secret generic k8s-cert-bak \
                                 --from-file=ca=" + kde_auth_dir + "ca.pem \
@@ -650,4 +739,3 @@ def delete_host(host_name):
     :param host_name:
     :return:
     """
-

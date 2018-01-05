@@ -13,11 +13,11 @@ nodes:
 #  - hostname: k8s-master2
 #    role: []
 #    external_IP: 192.168.1.202
-#  - hostname: k8s-minion1
-#    role: [control,etcd]
-#    external_IP: "192.168.1.203"
-#    ssh_user: "root"
-#    ssh_password: "123456"
+  - hostname: k8s-minion1
+    role: [control,etcd]
+    external_IP: "192.168.1.199"
+    ssh_user: "root"
+    ssh_password: "123456"
 
 
 kubernetes:

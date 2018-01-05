@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
-
+import datetime
 import shell
 from cmd import auth, deploy
 from kde.services import *
@@ -28,7 +28,10 @@ def test_check_env():
     configs = config_parser.Config("../cluster.yml")
     configs.load()
 
-    deploy.pre_check(**configs.data)
+    try:
+        deploy.pre_check(configs.data)
+    except BaseError as e:
+        print(e.message)
 
 
 def test_validate_cluster_data():
@@ -140,8 +143,23 @@ def test_recover_cert():
     print(out)
 
 
+def test_check_host_time():
+    configs = config_parser.Config(constants.cluster_cfg_path)
+    configs.load()
+
+    cluster_data = configs.data
+    deploy.check_host_time(cluster_data)
+
+    # str = "2018-1-5 14:31:00"
+    # str2 = "2018-1-5 14:32:00"
+    # d1 = datetime.datetime.strptime(str, '%Y-%m-%d %H:%M:%S')
+    # d2 = datetime.datetime.strptime(str2, '%Y-%m-%d %H:%M:%S')
+    # diff = (d1-d2).seconds if d1>d2 else (d2-d1).seconds
+    #
+    # print (diff)
+
 def main():
-    test_recover_cert()
+    test_check_env()
 
 
 if __name__ == '__main__':
