@@ -30,4 +30,6 @@ class Docker(Service):
 
         rsh = self.remote_shell
         rsh.copy(constants.kde_service_dir + "docker.service", "/etc/systemd/system/")
+
+        rsh.prep_dir("/var/lib/docker/", clear=False)
         rsh.execute("systemctl enable docker")

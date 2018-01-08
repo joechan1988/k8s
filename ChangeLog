@@ -1,0 +1,65 @@
+CHANGES
+=======
+
+* added: project folder reconstruct; CLI shell codes added
+* added: validation of cluster config file; reconstruct service class; Exception class
+* added: put gen\_cert codes into auth.py; test.py for each package; cmanager,scheduler class ..
+* added: env check codes
+* added: services files for coding... added: download\_binaries method
+* modified: apiserver token; ..
+* modified: apiserver, deployment; etcd format; cluster.yml added fqdn;
+* added: etcd deployment; apiserver deployment;
+* modified: reconstruct, separate service deployment
+* modified: etcd cluster building method,cfg file
+* none lf
+* add: check kube-dns scripts
+* modified: chmod +x calico shell
+* modified: kubedns-controller.yaml  image repo
+* modified: calico support added
+* Update kubedns-controller.yaml
+* modified: priviliges to executables
+* modifed: fix bugs in csr creating;common.py shell\_exec
+* modified: shell\_exec ; create\_csr\_auto\_approve method ;
+* added: haproxy res files
+* deleted: old shell scripts modified: cert generation method, get binaries, argparser,common.py
+* modified: reconstruction
+* deleted: csr templates files
+* added: cert tools modified: cert generating scripts
+* del: harbor modified: deploy scripts
+* modified: custom k8s version
+* added: generate\_kubeconfig modified: generate\_cert
+* added: flanned scripts
+* added: k8s python scripts
+* added :keepalived-conf
+* added: main scripts
+* added: csr-auto-approve.yml modified: minion node deploying scripts
+* modified: deploy master
+* redir
+* add python scripts
+* Update 06-master-node.sh
+* Update 05-master-components.sh
+* Update 04-kubectl.sh
+* Update 03-flannel-master.sh
+* Update 02-etcd.sh
+* Update 01-credentials-master.sh
+* Update 00-env-master.sh
+* Update 03-flannel-minion.sh
+* Update 00-env-minion.sh
+* Update 01-credentials-master.sh
+* Update grafana-deployment.yaml
+* Update grafana-service.yaml
+* Update heapster-deployment.yaml
+* Update influxdb-deployment.yaml
+* Update grafana-deployment.yaml
+* Update heapster-deployment.yaml
+* Update heapster-deployment.yaml
+* Update kubedns-controller.yaml
+* Update kubedns-controller.yaml
+* Update kubedns-controller.yaml
+* Update kubedns-controller.yaml
+* Update 06-master-node.sh
+* add addons/
+* add scripts/
+* dir name modify
+* Add files via upload
+* Initial commit

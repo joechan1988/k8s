@@ -39,6 +39,8 @@ class Proxy(Service):
         rsh.copy(constants.kde_auth_dir + "admin.kubeconfig", "/etc/kubernetes/")
         rsh.copy(constants.kde_service_dir + "kube-proxy.service", "/etc/systemd/system/")
 
+        rsh.prep_dir("/var/lib/kube-proxy/", clear=True)
+
         rsh.execute("systemctl enable kube-proxy")
 
         # rsh.close()

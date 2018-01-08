@@ -62,7 +62,7 @@ class Etcd(Service):
             rsh.copy(constants.kde_auth_dir + "etcd.pem", self.certfile)
             rsh.copy(constants.kde_auth_dir + "etcd-key.pem", self.keyfile)
 
-            rsh.prep_dir("/var/lib/etcd/", clear=True)
+            rsh.prep_dir("/var/lib/etcd/", clear=False)
             # rsh.execute("systemctl enable etcd")
 
         elif self.cluster_type == "existing":
