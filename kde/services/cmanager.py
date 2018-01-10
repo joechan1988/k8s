@@ -16,42 +16,34 @@ class CManager(Service):
     def configure(self, **cluster_data):
         k8s_configs = cluster_data.get("kubernetes")
 
+        self.cni_plugin = cluster_data.get("cni").get("plugin")
         self.cluster_cidr = k8s_configs.get("cluster_cidr")
         self.service_cidr = k8s_configs.get("service_cidr")
-        #
-        # nodes = cluster_data.get('nodes')
-        #
-        # for node in nodes:
-        #     if 'control' in node.get('role'):
-        #         self.nodes.append(node)
 
     def _deploy_service(self):
-        #
-        # for node in self.nodes:
-        #     ip = node.get('external_IP')
-        #     user = node.get('ssh_user')
-        #     password = node.get("ssh_password")
-        #     name = node.get("hostname")
 
-        # logging.critical("Starting To Deploy Controller Manager On Node: %s, IP address: %s ", self.host_name, self.node_ip)
-
-        common.render(os.path.join(constants.template_dir, "kube-controller-manager.service"),
-                      os.path.join(constants.kde_service_dir, "kube-controller-manager.service"),
-                      node_ip=self.node_ip,
-                      service_cidr=self.service_cidr,
-                      cluster_cidr=self.cluster_cidr,
-                      )
+        if self.cni_plugin == "calico":
+            common.render(os.path.join(constants.template_dir, "kube-controller-manager.service"),
+                          os.path.join(constants.kde_service_dir, "kube-controller-manager.service"),
+                          node_ip=self.node_ip,
+                          service_cidr=self.service_cidr,
+                          allocate_node_cidrs="",
+                          cluster_cidr=""
+                          )
+        else:
+            common.render(os.path.join(constants.template_dir, "kube-controller-manager.service"),
+                          os.path.join(constants.kde_service_dir, "kube-controller-manager.service"),
+                          node_ip=self.node_ip,
+                          service_cidr=self.service_cidr,
+                          allocate_node_cidrs="--allocate-node-cidrs=true",
+                          cluster_cidr="--cluster-cidr=" + self.cluster_cidr,
+                          )
 
         logging.info("Copy kube-controller-manager Config Files To Node: " + self.host_name)
 
         rsh = self.remote_shell
-        # rsh.connect()
 
-        rsh.copy(constants.tmp_bin_dir+"kube-controller-manager","/usr/bin/")
+        rsh.copy(constants.tmp_bin_dir + "kube-controller-manager", "/usr/bin/")
         rsh.copy(constants.kde_service_dir + "kube-controller-manager.service", "/etc/systemd/system/")
 
         rsh.execute("systemctl enable kube-controller-manager")
-
-        # rsh.close()
-
-

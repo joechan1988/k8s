@@ -116,6 +116,7 @@ class Apiserver(Service):
         rsh.prep_dir(self.ssl_dir, clear=True)
 
         rsh.copy(constants.tmp_bin_dir + "kube-apiserver", "/usr/bin/")
+        rsh.copy(constants.tmp_bin_dir + "kubectl", "/usr/bin/")
         rsh.copy(constants.kde_service_dir + "kube-apiserver.service", "/etc/systemd/system/")
         rsh.copy(self.tmp_cert_path + "token.csv", self.config_dir)
         rsh.copy(self.tmp_cert_path + "ca.pem", self.ca_cert)

@@ -163,6 +163,8 @@ spec:
               value: ""
             - name: FELIX_HEALTHENABLED
               value: "true"
+            - name: IP_AUTODETECTION_METHOD
+              value: $ip_autodetection_method
           securityContext:
             privileged: true
           resources:

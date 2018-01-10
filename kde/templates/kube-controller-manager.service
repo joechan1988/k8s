@@ -6,16 +6,14 @@ Documentation=https://github.com/GoogleCloudPlatform/kubernetes
 ExecStart=/usr/bin/kube-controller-manager \
   --address=127.0.0.1 \
   --master=http://$node_ip:8080 \
-  --allocate-node-cidrs=true \
   --service-cluster-ip-range=$service_cidr \
-  --cluster-cidr=$cluster_cidr \
   --cluster-name=kubernetes \
   --cluster-signing-cert-file=/etc/kubernetes/ssl/ca.pem \
   --cluster-signing-key-file=/etc/kubernetes/ssl/ca-key.pem \
   --service-account-private-key-file=/etc/kubernetes/ssl/ca-key.pem \
   --root-ca-file=/etc/kubernetes/ssl/ca.pem \
   --leader-elect=true \
-  --v=2
+  --v=2 $allocate_node_cidrs $cluster_cidr
 Restart=on-failure
 RestartSec=5
 

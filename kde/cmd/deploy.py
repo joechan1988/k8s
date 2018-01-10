@@ -12,16 +12,25 @@ from kde.util.exception import *
 from kde.services import *
 
 
-def _get_host_time(ip, user, password):
-    rsh = RemoteShell(ip, user, password)
-    rsh.connect()
+def _get_host_time(ip=None, user=None, password=None):
+    if ip is not None \
+            and user is not None \
+            and password is not None:
+        rsh = RemoteShell(ip, user, password)
+        rsh.connect()
 
-    ret = rsh.execute("date +'%Y-%m-%d %H:%M:%S'")
-    rsh.close()
+        ret = rsh.execute("date +'%Y-%m-%d %H:%M:%S'")
+        rsh.close()
 
-    date_time = datetime.datetime.strptime(ret[0].replace("\n", ""), '%Y-%m-%d %H:%M:%S')
+        date_time = datetime.datetime.strptime(ret[0].replace("\n", ""), '%Y-%m-%d %H:%M:%S')
 
-    return date_time
+        return date_time
+
+    else:
+        ret = common.shell_exec("date +'%Y-%m-%d %H:%M:%S'", shell=True, output=True)
+        date_time = datetime.datetime.strptime(ret.replace("\n", ""), '%Y-%m-%d %H:%M:%S')
+
+        return date_time
 
 
 def _check_host_time(cluster_data):
@@ -47,14 +56,13 @@ def _check_host_time(cluster_data):
         host_time_list.append(pool_result.get())
 
     host_time_diff = 0
+    host_time_base = _get_host_time()
     # print(host_time_list)
-    for host_time in host_time_list[1:]:
-        host_time_diff = (host_time - host_time_list[0]).seconds if host_time > host_time_list[0] \
-            else (host_time_list[0] - host_time).seconds
+    for host_time in host_time_list:
+        host_time_diff = (host_time - host_time_base).seconds if host_time > host_time_base \
+            else (host_time_base - host_time).seconds
 
     if host_time_diff > 60:
-        # raise PreCheckError(
-        #     "Time settings difference between nodes is larger than 1 minutes.Check ntp service installation")
         return False
     else:
         return True
@@ -90,7 +98,6 @@ def pre_check(cluster_data):
                                 "/var/lib/etcd/"
                                 ]
 
-    # SSH reachability check
     for node in nodes:
         ip = node.get('external_IP')
         user = node.get('ssh_user')
@@ -128,7 +135,6 @@ def pre_check(cluster_data):
                 logging.warning("Warning: Module or component {0} is not found.".format(bin_name))
                 node_result["details"] = node_result["details"] + "Module or component {0} is not found.".format(
                     bin_name)
-                # summary["hint"] = summary["hint"] + "Module or component {0} is not found.".format(bin_name)
 
         # ---Docker Version Check ---
         docker_version = rsh.execute(docker_version_cmd)
@@ -155,18 +161,19 @@ def pre_check(cluster_data):
             node_result["details"] = node_result["details"] + "Fount non-empty directories: {0} ;".format(
                 leftover_dir_names, name)
 
-            # summary["result"] = "failed"
-            # summary["hint"] = summary["hint"] + "Fount non-empty directories: {0} on node: {1}; ".format(
-            #     leftover_dir_names, name)
+        # TODO: ---Etcd left-over container check ---
+
+        if "etcd" in node.get("role"):
+            out = rsh.execute("docker ps -a|grep kde-etcd")
+            if len(out):
+                node_result["passed"] = "no"
+                node_result["details"] = node_result["details"] + "Existing etcd containers found; "
 
         # --- IPV4 Forwarding Check ---
         ipv4_forward_check = rsh.execute("sysctl net.ipv4.conf.all.forwarding -b")
         if ipv4_forward_check[0] != "1":
             node_result["passed"] = "no"
             node_result["details"] = node_result["details"] + "IPV4 Forwarding Is Disabled; "
-
-            # summary["result"] = "failed"
-            # summary["hint"] = summary["hint"] + "IPV4 Forwarding Is Disabled; "
 
         # ---- SELinux check ---
         selinux_check = rsh.execute("getenforce")
@@ -211,10 +218,6 @@ def prep_binaries(path, cluster_data):
     For ftp instance, ftp address and list of binaries should be defined in cluster.yml
     :return:
     """
-
-    # configs = config_parser.Config(constants.cluster_cfg_path)
-    # configs.load()
-    # cluster_data = configs.data
 
     bin_list = cluster_data.get("binaries").get("list")
     redownload_flag = cluster_data.get("binaries").get("redownload")
@@ -451,7 +454,7 @@ def do(cluster_data):
             result = _deploy_node(ip, user, password, name, service_list, **cluster_data)
             if result["result"] == "failure":
                 logging.error(
-                    "Failed to deploy calico cni plugin on node: {0}. Please try deploying it manually.".format(node))
+                    "Failed to deploy calico cni plugin on node: {0}. Please try deploying it manually.".format(name))
 
             break
 

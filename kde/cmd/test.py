@@ -148,7 +148,11 @@ def test_check_host_time():
     configs.load()
 
     cluster_data = configs.data
-    deploy.check_host_time(cluster_data)
+    # deploy.check_host_time(cluster_data)
+
+    ret = common.shell_exec("date +'%Y-%m-%d %H:%M:%S'", shell=True, output=True)
+    date_time = datetime.datetime.strptime(ret.replace("\n", ""), '%Y-%m-%d %H:%M:%S')
+    print(date_time)
 
     # str = "2018-1-5 14:31:00"
     # str2 = "2018-1-5 14:32:00"
@@ -158,8 +162,18 @@ def test_check_host_time():
     #
     # print (diff)
 
+
+def test_get_etcd_container():
+    rsh = RemoteShell("192.168.1.204", "root", "123456")
+    rsh.connect()
+    out = rsh.execute("docker ps -a|grep kde")
+
+    if len(out):
+        print(out)
+
+
 def main():
-    test_check_env()
+    test_get_etcd_container()
 
 
 if __name__ == '__main__':

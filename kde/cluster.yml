@@ -6,7 +6,7 @@ external_VIP: "1.1.1.1"  # IP for external access to cluster; should be either a
 nodes:
 # role: control; worker; etcd;
   - hostname: k8s-master1
-    role: [control]
+    role: [control,etcd]
     external_IP: "192.168.1.204"
     ssh_user: "root"
     ssh_password: "123456"
@@ -15,7 +15,7 @@ nodes:
 #    external_IP: 192.168.1.202
   - hostname: k8s-minion1
     role: [control,etcd]
-    external_IP: "192.168.1.199"
+    external_IP: "192.168.1.203"
     ssh_user: "root"
     ssh_password: "123456"
 
@@ -42,7 +42,7 @@ cni:
   flannel:
     etcd_prefix: /kubernetes/network
   calico:
-    etcd_endpoints: ""
+    ip_autodetection_method: can-reach=192.168.1.1
 
 binaries:
   download_url: "ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/v1.8.0/server/bin/"

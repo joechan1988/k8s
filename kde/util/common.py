@@ -47,6 +47,7 @@ class RemoteShell(object):
         err_ret = stderr.readlines()
 
         if err_ret:
+            err_ret.append("errors")
             return err_ret
         else:
             return out_ret

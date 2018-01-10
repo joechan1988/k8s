@@ -7,6 +7,7 @@ from kde.templates import constants
 
 etcd_ssl_dir = constants.etcd_ssl_dir
 
+
 class Calico(Service):
     def __init__(self):
         super(Calico, self).__init__()
@@ -16,12 +17,14 @@ class Calico(Service):
     def configure(self, **cluster_data):
         k8s_configs = cluster_data.get("kubernetes")
         etcd_configs = cluster_data.get('etcd')
+        calico_configs = cluster_data.get("cni").get("calico")
 
         self.cluster_cidr = k8s_configs.get("cluster_cidr")
         self.etcd_endpoints = cluster_data.get("etcd_endpoints")
         self.etcd_keyfile = etcd_configs.get('keyfile')
         self.etcd_cafile = etcd_configs.get('cafile')
         self.etcd_certfile = etcd_configs.get('certfile')
+        self.ip_autodetection_method = calico_configs.get("ip_autodetection_method")
 
     def _deploy_service(self):
         common.render(os.path.join(constants.template_dir, "calico.yaml"),
@@ -30,7 +33,8 @@ class Calico(Service):
                       etcd_keyfile=self.etcd_keyfile,
                       etcd_cafile=self.etcd_cafile,
                       etcd_certfile=self.etcd_certfile,
-                      cluster_cidr=self.cluster_cidr
+                      cluster_cidr=self.cluster_cidr,
+                      ip_autodetection_method=self.ip_autodetection_method
                       )
 
         rsh = self.remote_shell
@@ -58,7 +62,7 @@ class Calico(Service):
         logging.debug(outputs)
         for output in outputs:
             if "Error from server" in output or "error" in output:
-                logging.error("Failed to create calico cluster secret: {0}".format(output))
+                logging.error("Failed to create calico cluster secret: {0}".format(outputs))
                 return False
 
         logging.debug("Created calico cluster secret")
@@ -66,8 +70,11 @@ class Calico(Service):
         outputs = rsh.execute(create_calico_cmd)
         logging.debug(outputs)
         for output in outputs:
+            if "errors" in output:
+                logging.error("Failed to create calico cni plugin: {0}".format(outputs))
+                return False
             if "Error from server" in output:
-                logging.error("Failed to create calico cni plugin: {0}".format(output))
+                logging.error("Failed to create calico cni plugin: {0}".format(outputs))
                 return False
 
         # Configure calico outgoing traffic policy
