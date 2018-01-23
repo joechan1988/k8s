@@ -1,6 +1,6 @@
 import os
 
-cluster_cfg_path = "/root/codes/k8s-deploy/kde/cluster.yml"
+cluster_cfg_path = "/etc/kde/cluster.yml"
 
 template_dir = os.path.dirname(__file__)
 

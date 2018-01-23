@@ -25,13 +25,19 @@ from kde.util.exception import *
 
 
 def test_check_env():
-    configs = config_parser.Config("../cluster.yml")
+    configs = config_parser.Config(constants.cluster_cfg_path)
     configs.load()
 
     try:
         deploy.pre_check(configs.data)
     except BaseError as e:
         print(e.message)
+
+def test_check_module():
+    configs = config_parser.Config(constants.cluster_cfg_path)
+    configs.load()
+    cluster_data = configs.data
+
 
 
 def test_validate_cluster_data():
@@ -173,7 +179,7 @@ def test_get_etcd_container():
 
 
 def main():
-    test_get_etcd_container()
+    test_check_env()
 
 
 if __name__ == '__main__':

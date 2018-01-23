@@ -34,11 +34,13 @@ class Etcd(Service):
         for node in self.nodes:
             cluster_size = cluster_size + 1
 
-        while True:
+        timeout=10
+        while timeout:
             discovery = subprocess.check_output(
                 ["curl", "-s", "https://discovery.etcd.io/new?size=" + str(cluster_size)])
             if "etcd.io" in discovery:
                 break
+            timeout-=1
 
         self.discovery = discovery.replace('https', 'http')
 

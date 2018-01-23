@@ -33,6 +33,7 @@ LimitNPROC=1048576
 LimitCORE=infinity
 TimeoutStartSec=0
 Restart=on-abnormal
+MountFlags=shared
 
 [Install]
 WantedBy=multi-user.target

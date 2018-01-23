@@ -86,6 +86,17 @@ class RemoteShell(object):
             logging.error(e.message)
             return
 
+    def check_module(self,name):
+
+        ret =self.execute("echo $PATH")
+        path_list = (ret[0].replace("\n","")).split(":")
+        for path in path_list:
+            check_cmd = "ls -l "+path+"/"+name
+            ret = self.execute(check_cmd)
+            if "No such file" not in ret[0]:
+                return True
+
+        return False
 
 def shell_exec(cmd, shell=False, debug=False, output=False):
     if not output:

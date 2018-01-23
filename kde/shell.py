@@ -38,6 +38,8 @@ class Subcommands(object):
         if results is not None:
             logging.critical(results)
 
+        common.shell_exec("cp -rf ../addons /etc/kde/",shell=True)
+
     @common.cmd_help("Reset the last cluster deployment")
     def reset(self, args, **cluster_data):
 

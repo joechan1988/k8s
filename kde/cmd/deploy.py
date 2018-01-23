@@ -120,17 +120,17 @@ def pre_check(cluster_data):
         # Essential module check: systemctl, nslookup ...
 
         essential_bins = ["systemctl", "docker", "sysctl", "jq"]
-        recommended_bins = ['nslookup']
+        recommended_bins = ['nslookup','conntrack']
 
         for bin_name in essential_bins:
-            check_result = common.check_preinstalled_binaries(bin_name)
+            check_result = rsh.check_module(bin_name)
             if not check_result:
                 node_result["passed"] = "no"
                 node_result["details"] = node_result["details"] + "Module or component {0} is not found.".format(
                     bin_name)
 
         for bin_name in recommended_bins:
-            check_result = common.check_preinstalled_binaries(bin_name)
+            check_result = rsh.check_module(bin_name)
             if not check_result:
                 logging.warning("Warning: Module or component {0} is not found.".format(bin_name))
                 node_result["details"] = node_result["details"] + "Module or component {0} is not found.".format(
@@ -161,7 +161,7 @@ def pre_check(cluster_data):
             node_result["details"] = node_result["details"] + "Fount non-empty directories: {0} ;".format(
                 leftover_dir_names, name)
 
-        # TODO: ---Etcd left-over container check ---
+        # --- Etcd left-over container check ---
 
         if "etcd" in node.get("role"):
             out = rsh.execute("docker ps -a|grep kde-etcd")
@@ -738,6 +738,10 @@ def add_host(**cluster_data):
 def delete_host(host_name):
     """
     Delete a node in cluster
+
+    1. check if host is a node in cluster
+    2. delete node in k8s cluster
+    3. reset host deployment
 
     :param host_name:
     :return:
