@@ -68,7 +68,7 @@ def _check_host_time(cluster_data):
         return True
 
 
-def pre_check(cluster_data):
+def pre_check(cluster_data, check_leftover):
     """
     Environment check before starting deployment procedure.
 
@@ -120,7 +120,7 @@ def pre_check(cluster_data):
         # Essential module check: systemctl, nslookup ...
 
         essential_bins = ["systemctl", "docker", "sysctl", "jq"]
-        recommended_bins = ['nslookup','conntrack']
+        recommended_bins = ['nslookup', 'conntrack']
 
         for bin_name in essential_bins:
             check_result = rsh.check_module(bin_name)
@@ -157,7 +157,11 @@ def pre_check(cluster_data):
                 leftover_dir_names = leftover_dir_names + directory + ", "
 
         if len(leftover_dirs):
-            node_result["passed"] = "no"
+            if check_leftover:
+                node_result["passed"] = "no"
+            else:
+                node_result["passed"] = "yes"
+
             node_result["details"] = node_result["details"] + "Fount non-empty directories: {0} ;".format(
                 leftover_dir_names, name)
 
@@ -319,7 +323,7 @@ def do(cluster_data):
     logging.critical("Starting environment precheck...")
     try:
         # validate_cluster_data(cluster_data)
-        precheck_result = pre_check(cluster_data)
+        precheck_result = pre_check(cluster_data, check_leftover=False)
     except BaseError as e:
         logging.error(e.message)
         return
@@ -472,7 +476,7 @@ def do(cluster_data):
     return results
 
 
-def reset(**cluster_data):
+def reset(cluster_data, clear=False):
     """
     Reset the last deployment
 
@@ -523,8 +527,9 @@ def reset(**cluster_data):
             service.stop()
             rsh.execute("systemctl disable " + service.service_name)
 
-        rsh.execute("umount /var/lib/kubelet/pods/*/volumes/*/*")
-        rsh.execute("rm -rf /var/lib/kubelet/ /etc/kubernetes/")
+        if clear:
+            rsh.execute("umount /var/lib/kubelet/pods/*/volumes/*/*")
+            rsh.execute("rm -rf /var/lib/kubelet/ /etc/kubernetes/")
 
         docker.start()
         rsh.close()
@@ -563,8 +568,9 @@ def reset(**cluster_data):
             service.stop()
             rsh.execute("systemctl disable " + service.service_name)
 
-        rsh.execute("umount /var/lib/kubelet/pods/*/volumes/*/*")
-        rsh.execute("rm -rf /var/lib/kubelet/ /etc/kubernetes/")
+        if clear:
+            rsh.execute("umount /var/lib/kubelet/pods/*/volumes/*/*")
+            rsh.execute("rm -rf /var/lib/kubelet/ /etc/kubernetes/")
 
         docker.start()
         rsh.close()
@@ -572,7 +578,7 @@ def reset(**cluster_data):
     logging.critical("Clean-up job finished.")
 
 
-def add_host(**cluster_data):
+def add_host(cluster_data):
     """
     Add new hosts to a existing kubernetes cluster
 
@@ -610,7 +616,7 @@ def add_host(**cluster_data):
     logging.critical("Starting environment precheck...")
     try:
         # validate_cluster_data(cluster_data)
-        precheck_result = pre_check(cluster_data)
+        precheck_result = pre_check(cluster_data, check_leftover=False)
     except BaseError as e:
         logging.error(e.message)
         return

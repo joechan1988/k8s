@@ -22,7 +22,7 @@ class Subcommands(object):
 
     # @common.arg('--config', default=constants.cluster_cfg_path, help="Default config file path")
     @common.cmd_help('Deploy a initiated kubernetes cluster according to cluster.yml')
-    def deploy(self, args, **cluster_data):
+    def deploy(self, args, cluster_data):
         # configs = config_parser.Config(args.config)
         # configs.load()
         # cluster_data = configs.data
@@ -40,16 +40,17 @@ class Subcommands(object):
 
         common.shell_exec("cp -rf ../addons /etc/kde/",shell=True)
 
+    @common.arg("--clear",default=False,help="Clear data directories if set True")
     @common.cmd_help("Reset the last cluster deployment")
-    def reset(self, args, **cluster_data):
+    def reset(self, args, cluster_data):
 
-        deploy.reset(**cluster_data)
+        deploy.reset(cluster_data,args.clear)
 
     @common.cmd_help("Add new hosts to existing cluster")
-    def add_host(self,args,**cluster_data):
+    def add_host(self,args,cluster_data):
 
         try:
-            deploy.add_host(**cluster_data)
+            deploy.add_host(cluster_data)
         except exception.BaseError as e:
             logging.error(e.message)
 
@@ -125,7 +126,7 @@ def main():
     # Set log level
     _set_log_level(cluster_data.get('log_level'))
 
-    top_args.func(top_args, **cluster_data)
+    top_args.func(top_args, cluster_data)
 
 
 if __name__ == "__main__":
