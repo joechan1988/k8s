@@ -24,12 +24,11 @@ RUN apt-get update && \
         python-setuptools \
         build-essential
 
+RUN apt-get install --no-install-recommends -y git python-yaml && \
+    pip install --upgrade pip
+
 COPY ./ /kde/
 WORKDIR /kde/
-#RUN mkdir -p /tmp/bin/ && \
-#    mv -f bin/cfssl* /usr/bin/ && \
-#    mv -f bin/* /tmp/bin/ && \
-#    chmod +x /usr/bin/cfssl*
 
 RUN mkdir -p /tmp/bin && \
     cp -f bin/kubectl /usr/bin && \
@@ -39,9 +38,8 @@ RUN mkdir -p /tmp/bin && \
     chmod +x /usr/bin/cfssl* \
               /usr/bin/kubectl
 
-RUN apt-get install --no-install-recommends -y git python-yaml && \
-    pip install --upgrade pip && \
-    pip install -U .
+RUN pip install -U .
 
+COPY ["docker","docker-compose","/usr/bin/"]
 #RUN rm -rf /var/lib/apt/lists/*
 

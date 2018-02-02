@@ -23,12 +23,7 @@ class Subcommands(object):
     # @common.arg('--config', default=constants.cluster_cfg_path, help="Default config file path")
     @common.cmd_help('Deploy a initiated kubernetes cluster according to cluster.yml')
     def deploy(self, args, cluster_data):
-        # configs = config_parser.Config(args.config)
-        # configs.load()
-        # cluster_data = configs.data
-        #
-        # deploy.do(cluster_data)
-        # logging.critical("do func deploy " + args.config)
+
         results = dict()
         try:
             results = deploy.do(cluster_data)
@@ -95,8 +90,8 @@ def _parse_cluster_data(config_path):
 def main():
     # Arguments
     top_parser = argparse.ArgumentParser()
-    top_parser.add_argument('--test', dest='test_unit', type=str, default='')
-    top_parser.add_argument('--config', type=str, default=constants.cluster_cfg_path)
+    top_parser.add_argument('--test', dest='', type=str, default='')
+    top_parser.add_argument('--config',type=str, default=constants.cluster_cfg_path)
 
     # Subcommands
     subparsers = top_parser.add_subparsers(help='Commands')

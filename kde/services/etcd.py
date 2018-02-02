@@ -24,6 +24,7 @@ class Etcd(Service):
         self.keyfile = etcd_configs.get('keyfile')
         self.cafile = etcd_configs.get('cafile')
         self.certfile = etcd_configs.get('certfile')
+        self.data_directory = etcd_configs.get("data_directory")
 
         nodes = configs.get('nodes')
         for node in nodes:
@@ -94,11 +95,12 @@ class Etcd(Service):
               --listen-client-urls=https://{node_ip}:2379,http://127.0.0.1:2379 \
               --advertise-client-urls=https://{node_ip}:2379 \
               --discovery={discovery} \
-              --data-dir=/var/lib/etcd".format(discovery=self.discovery,
+              --data-dir={data_directory}".format(discovery=self.discovery,
                                                keyfile=self.keyfile,
                                                cafile=self.cafile,
                                                certfile=self.certfile,
-                                               node_ip=self.node_ip,name=self.host_name)
+                                               node_ip=self.node_ip,name=self.host_name,
+                                                  data_directory=self.data_directory)
 
         logging.info(cmd)
         # rsh.execute("systemctl daemon-reload")

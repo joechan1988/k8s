@@ -29,6 +29,7 @@ kubernetes:
   cluster_dns_svc_ip: "10.254.0.2"
   cluster_dns_domain: "cluster.local."
   config_directory: "/etc/kubernetes/"
+  kubelet_data_directory: "/home/var/lib/kubelet/"
 
 etcd:
   cluster_type: "new"
@@ -36,6 +37,7 @@ etcd:
   keyfile: "/etc/etcd/ssl/etcd-key.pem"
   cafile: "/etc/etcd/ssl/ca.pem"
   certfile: "/etc/etcd/ssl/etcd.pem"
+  data_directory: "/var/lib/etcd/"
 
 cni:
   plugin: "calico" #Options: flannel,calico
