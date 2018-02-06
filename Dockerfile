@@ -35,11 +35,10 @@ RUN mkdir -p /tmp/bin && \
     mv -f bin/cfssl* /usr/bin && \
     mv -f bin/kube* /tmp/bin && \
     mv -f bin/etcd* /tmp/bin && \
+    mv -f bin/docker* /usr/bin && \
     chmod +x /usr/bin/cfssl* \
-              /usr/bin/kubectl
+              /usr/bin/kubectl \
+              /usr/bin/docker \
+              /usr/bin/docker-compose
 
 RUN pip install -U .
-
-COPY ["docker","docker-compose","/usr/bin/"]
-#RUN rm -rf /var/lib/apt/lists/*
-
