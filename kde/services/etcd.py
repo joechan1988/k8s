@@ -25,6 +25,8 @@ class Etcd(Service):
         self.cafile = etcd_configs.get('cafile')
         self.certfile = etcd_configs.get('certfile')
         self.data_directory = etcd_configs.get("data_directory")
+        self.discovery_type = etcd_configs.get("discovery_type")
+        self.discovery_url = etcd_configs.get("discovery_url")
 
         nodes = configs.get('nodes')
         for node in nodes:
@@ -35,15 +37,18 @@ class Etcd(Service):
         for node in self.nodes:
             cluster_size = cluster_size + 1
 
-        timeout=10
-        while timeout:
-            discovery = subprocess.check_output(
-                ["curl", "-s", "https://discovery.etcd.io/new?size=" + str(cluster_size)])
-            if "etcd.io" in discovery:
-                break
-            timeout-=1
+        if self.discovery_type == "public":
+            timeout=10
+            while timeout:
+                # discovery = subprocess.check_output(
+                #     ["curl", "-s", "https://discovery.etcd.io/new?size=" + str(cluster_size)])
+                discovery = subprocess.check_output(
+                     ["curl", "-s", self.discovery_url.format(size=cluster_size)])
+                if "etcd.io" in discovery:
+                    break
+                timeout-=1
 
-        self.discovery = discovery.replace('https', 'http')
+            self.discovery = discovery.replace('https', 'http')
 
     def _deploy_service(self):
 
@@ -65,7 +70,7 @@ class Etcd(Service):
             rsh.copy(constants.kde_auth_dir + "etcd.pem", self.certfile)
             rsh.copy(constants.kde_auth_dir + "etcd-key.pem", self.keyfile)
 
-            rsh.prep_dir("/var/lib/etcd/", clear=False)
+            rsh.prep_dir(self.data_directory, clear=False)
             # rsh.execute("systemctl enable etcd")
 
         elif self.cluster_type == "existing":
@@ -76,16 +81,45 @@ class Etcd(Service):
         rsh = self.remote_shell
         # rsh.connect()
 
-        cmd = "docker run -d --name kde-etcd \
-                -v {keyfile}:{keyfile} \
-                -v {cafile}:{cafile} \
-                -v {certfile}:{certfile} \
-                -v /var/lib/etcd:/var/lib/etcd \
-              --net=host --privileged --restart=on-failure \
-                gcr.io/google-containers/etcd:3.1.11 etcd \
-              --name={name} \
-              --cert-file={certfile} \
-              --key-file={keyfile} \
+        if self.discovery_type == "local":
+            cmd = "docker run -d --name kde-etcd \
+                    -v {keyfile}:{keyfile} \
+                    -v {cafile}:{cafile} \
+                    -v {certfile}:{certfile} \
+                    -v {data_directory}:{data_directory} \
+                  --net=host --privileged --restart=on-failure \
+                    gcr.io/google-containers/etcd:3.1.11 etcd \
+                  --name={name} \
+                  --cert-file={certfile} \
+                  --key-file={keyfile} \
+              --peer-cert-file={certfile} \
+              --peer-key-file={keyfile} \
+              --trusted-ca-file={cafile} \
+              --peer-trusted-ca-file={cafile} \
+              --initial-cluster-state=new \
+              --initial-cluster={name}=https://{node_ip}:2380 \
+            --initial-cluster-token={name} \
+              --initial-advertise-peer-urls=https://{node_ip}:2380 \
+              --listen-peer-urls=https://{node_ip}:2380 \
+              --listen-client-urls=https://{node_ip}:2379,http://127.0.0.1:2379 \
+              --advertise-client-urls=https://{node_ip}:2379 \
+              --data-dir={data_directory}".format(keyfile=self.keyfile,
+                                               cafile=self.cafile,
+                                               certfile=self.certfile,
+                                               node_ip=self.node_ip,name=self.host_name,
+                                                data_directory=self.data_directory)
+
+        elif self.discovery_type == "public":
+            cmd = "docker run -d --name kde-etcd \
+                    -v {keyfile}:{keyfile} \
+                    -v {cafile}:{cafile} \
+                    -v {certfile}:{certfile} \
+                    -v /var/lib/etcd:/var/lib/etcd \
+                  --net=host --privileged --restart=on-failure \
+                    gcr.io/google-containers/etcd:3.1.11 etcd \
+                  --name={name} \
+                  --cert-file={certfile} \
+                  --key-file={keyfile} \
               --peer-cert-file={certfile} \
               --peer-key-file={keyfile} \
               --trusted-ca-file={cafile} \
@@ -96,10 +130,10 @@ class Etcd(Service):
               --advertise-client-urls=https://{node_ip}:2379 \
               --discovery={discovery} \
               --data-dir={data_directory}".format(discovery=self.discovery,
-                                               keyfile=self.keyfile,
-                                               cafile=self.cafile,
-                                               certfile=self.certfile,
-                                               node_ip=self.node_ip,name=self.host_name,
+                                                  keyfile=self.keyfile,
+                                                  cafile=self.cafile,
+                                                  certfile=self.certfile,
+                                                  node_ip=self.node_ip,name=self.host_name,
                                                   data_directory=self.data_directory)
 
         logging.info(cmd)

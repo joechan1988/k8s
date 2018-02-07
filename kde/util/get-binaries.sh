@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-base_url="ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/v1.7.4/server/bin/"
+base_url="ftp://public:123456@joechan1988.asuscomm.com/Other/share/kubernetes/binaries/v1.8.0/server/bin/"
 save_path="/tmp/bin/"  # Need to be the same path to cluster.yml
 
 binaries_list=(

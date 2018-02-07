@@ -33,6 +33,8 @@ kubernetes:
 
 etcd:
   cluster_type: "new"
+  discovery_type: "local" # public,local,local_etcd
+  discovery_url: "https://discovery.etcd.io/new?size={size}"
   ssl: "yes"
   keyfile: "/etc/etcd/ssl/etcd-key.pem"
   cafile: "/etc/etcd/ssl/ca.pem"
