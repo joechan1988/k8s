@@ -142,7 +142,9 @@ def pre_check(cluster_data, check_leftover):
         if "Cannot connect to the Docker daemon" in docker_version[0]:
             node_result["passed"] = "no"
             node_result["details"] = node_result["details"] + "Docker daemon is probably not running. "
-        elif "1.12" not in docker_version[0]:
+        elif "1.12" not in docker_version[0] \
+            or "1.11" not in docker_version[0] \
+            or "1.10" not in docker_version[0]:
             node_result["passed"] = "no"
             node_result["details"] = node_result["details"] + "Incompatible docker version; "
 

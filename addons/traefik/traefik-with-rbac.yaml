@@ -42,8 +42,7 @@ subjects:
   name: traefik-ingress-controller
   namespace: kube-system
 ---
-apiVersion: v1
-kind: Deployment
+kind: DaemonSet
 apiVersion: extensions/v1beta1
 metadata:
   name: traefik-ingress-controller
@@ -51,10 +50,6 @@ metadata:
   labels:
     k8s-app: traefik-ingress-lb
 spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      k8s-app: traefik-ingress-lb
   template:
     metadata:
       labels:
@@ -63,33 +58,38 @@ spec:
     spec:
       serviceAccountName: traefik-ingress-controller
       terminationGracePeriodSeconds: 60
-      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       containers:
       - image: traefik
-        imagePullPolicy: IfNotPresent
         name: traefik-ingress-lb
-        resources:
-          limits:
-            cpu: 200m
-            memory: 30Mi
-          requests:
-            cpu: 100m
-            memory: 20Mi
         ports:
         - name: http
           containerPort: 80
           hostPort: 80
         - name: admin
-          containerPort: 8081
+          containerPort: 8080
+        securityContext:
+          privileged: true
         args:
         - -d
         - --web
-        - --web.address=:8081
         - --kubernetes
-      tolerations:
-      - key: "node-role.kubernetes.io/master"
-        operator: "Equal"
-        effect: "NoSchedule"
-      nodeSelector:
-        node-role.kubernetes.io/master: ""
- 
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: traefik-ingress-service
+  namespace: kube-system
+spec:
+  selector:
+    k8s-app: traefik-ingress-lb
+  ports:
+    - protocol: TCP
+      port: 80
+      nodePort: 30080
+      name: web
+    - protocol: TCP
+      port: 8080
+      nodePort: 38080
+      name: admin
+  type: NodePort
