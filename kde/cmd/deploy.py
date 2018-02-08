@@ -428,6 +428,8 @@ def do(cluster_data):
         if result["result"] == "success":
             common.shell_exec("kubectl label node " + ip + " node-role.kubernetes.io/master=", shell=True)
 
+    # TODO: Label dns=yes,harbor=yes
+
             # Summary controller node deploy results.If failure, stop the whole deployment
     _sum_results(results)
     if results["summary"] == "failure":

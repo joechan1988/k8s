@@ -33,7 +33,7 @@ class Subcommands(object):
         if results is not None:
             logging.critical(results)
 
-        common.shell_exec("cp -rf ../addons /etc/kde/",shell=True)
+        common.shell_exec("cp -rf /kde/addons /etc/kde/",shell=True)
 
     @common.arg("--clear",default=False,help="Clear data directories if set True")
     @common.cmd_help("Reset the last cluster deployment")

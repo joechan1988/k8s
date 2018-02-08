@@ -8,6 +8,9 @@ from kde.templates import constants
 from service import Service
 
 
+# TODO: local_etcd discovery mode support
+
+
 class Etcd(Service):
     def __init__(self):
         super(Etcd, self).__init__()
