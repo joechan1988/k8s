@@ -44,9 +44,10 @@
   详见configuration.md
 
 ## 部署操作
-### 控制节点
+### kubernetes集群部署
 
 1. 检查必备组件是否安装
+1. 检查配置文件/etc/kde/cluster.yml
 2. 载入所有镜像文件  
 
     执行  
@@ -56,11 +57,13 @@
     - 准备yum源
     
         1. 使用现存yum源：解压docker.tar,将文件夹中所有rpm包加入已有yum源中
-        2. 使用本地yum源：解压docker.tar,复制文件夹内docker.repo文件到/etc/yum.repos.d/,并执行  
+        2. 使用本地yum源：解压docker.tar,复制文件夹内docker.repo文件到/etc/yum.repos.d/,
+        修改file指向的路径,并执行  
         `yum makecache`  
             
     - 执行安装操作  
         `yum install -y docker-1.12.6`
+        
 3. k8s集群部署  
 
     - 初始化部署  
@@ -73,9 +76,45 @@
              -v /etc/localtime:/etc/localtime:ro 
              kde:0.1 
              kde deploy`
+               
+        `docker run -t -i --net=host 
+            --rm -v /var/run/docker.sock:/var/run/docker.sock:ro 
+            -v /etc/kde:/etc/kde 
+            -v /etc/localtime:/etc/localtime:ro 
+            kde:1.7 kubectl 
+            --kubeconfig=/etc/kde/auth/admin.kubeconfig apply -f 
+            /etc/kde/addons/DNS/`  
+        
+        `docker run -t -i --net=host --rm 
+            -v /var/run/docker.sock:/var/run/docker.sock:ro 
+            -v /etc/kde:/etc/kde 
+            -v /etc/localtime:/etc/localtime:ro 
+            kde:1.7 kubectl --kubeconfig=/etc/kde/auth/admin.kubeconfig 
+            apply -f /etc/kde/addons/traefik/ `
     
-    - 部署重置
-    
-4. Harbor镜像仓库部署
+    - 部署重置（清除）
 
-### 工作节点
+        执行以下命令：  
+        `docker run
+             -t -i --net=host --rm 
+             -v /var/run/docker.sock:/var/run/docker.sock:ro 
+             -v /etc/kde:/etc/kde 
+             -v /etc/localtime:/etc/localtime:ro 
+             kde:0.1 
+             kde reset`
+    
+### Harbor镜像仓库部署
+
+1. 将harbor.tar文件解包
+2. 载入harbor镜像  
+
+    执行以下命令(文件名中版本可能需要替换)
+    `docker load -i harbor.v1.4.0.tar.gz`
+    
+3. 修改配置文件harbor.cfg
+
+    - hostname: 修改为本机对外IP
+    - harbor_admin_password: 管理界面登陆、镜像仓库密码
+    
+4. 执行部署操作
+
