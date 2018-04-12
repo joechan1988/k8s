@@ -10,16 +10,14 @@ import subprocess
 current_path = os.getcwd()
 
 dist_path = os.path.join(current_path, "dist")
-tar_path = os.path.join(current_path,"tar")
 doc_path = os.path.join(current_path,"doc")
 
-if os.path.exists(dist_path):
-    shutil.rmtree(dist_path)
+if os.path.exists(doc_path):
+    shutil.rmtree(doc_path)
 
-os.makedirs(dist_path)
+os.makedirs(doc_path)
 
 print("---Copying tar files---")
-shutil.copytree(tar_path,os.path.join(dist_path,"tar"))
 shutil.copytree(doc_path,os.path.join(dist_path,"doc"))
 
 print("---Generating dist package---")
