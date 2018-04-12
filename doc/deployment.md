@@ -78,10 +78,10 @@
    
 4. Docker引擎部署
 
-  - 说明： 需要在所有主机节点（包含部署所在主机）部署docker引擎
+    - 说明： 需要在所有主机节点（包含部署所在主机）部署docker引擎
 
-  - 准备yum源
-    
+    - 准备yum源
+
     - 使用现存yum源：解包 `<安装目录>/docker-installation/docker.tar`,将文件夹中所有rpm包加入已有yum源中
     - 使用本地yum源：解包 `<安装目录>/docker-installation/docker.tar`,复制文件夹内docker.repo文件到/etc/yum.repos.d/,
         修改file指向的路径,并执行
@@ -89,16 +89,16 @@
         yum makecache
         ```
 
-  - 执行安装操作  
-     ```
-     yum install -y docker-1.12.6
-     ```
+    - 执行安装操作
+        ```
+        yum install -y docker-1.12.6
+        ```
 
-   - 安装docker-compose客户端
-     ```
-     cp <安装目录>/docker-installation/docker-compose /usr/bin/
-     chmod +x /usr/bin/docker-compose
-     ```
+    - 安装docker-compose客户端
+        ```
+        cp <安装目录>/docker-installation/docker-compose /usr/bin/
+        chmod +x /usr/bin/docker-compose
+        ```
 
 ###### k8s集群部署操作
 
@@ -111,14 +111,14 @@
          -v /var/run/docker.sock:/var/run/docker.sock:ro \
          -v /etc/kde:/etc/kde \
          -v /etc/localtime:/etc/localtime:ro \
-         kde:0.1 \
+         kde \
          kde deploy
 
     docker run -t -i --net=host \
         --rm -v /var/run/docker.sock:/var/run/docker.sock:ro \
         -v /etc/kde:/etc/kde \
         -v /etc/localtime:/etc/localtime:ro \
-        kde:1.7 kubectl \
+        kde kubectl \
         --kubeconfig=/etc/kde/auth/admin.kubeconfig apply -f \
         /etc/kde/addons/DNS/
 
@@ -126,7 +126,7 @@
         -v /var/run/docker.sock:/var/run/docker.sock:ro \
         -v /etc/kde:/etc/kde \
         -v /etc/localtime:/etc/localtime:ro \
-        kde:1.7 kubectl --kubeconfig=/etc/kde/auth/admin.kubeconfig \
+        kde kubectl --kubeconfig=/etc/kde/auth/admin.kubeconfig \
         apply -f /etc/kde/addons/traefik/
     ```
 
@@ -139,7 +139,7 @@
              -v /var/run/docker.sock:/var/run/docker.sock:ro \
              -v /etc/kde:/etc/kde \
              -v /etc/localtime:/etc/localtime:ro \
-             kde:0.1 \
+             kde \
              kde reset
     ```
     
@@ -149,7 +149,9 @@
 2. 载入harbor镜像  
 
     执行以下命令(文件名中版本可能需要替换)
-    `docker load -i harbor.v1.4.0.tar.gz`
+    ```
+    docker load -i harbor.v1.4.0.tar.gz
+    ```
     
 3. 修改配置文件harbor.cfg
 
