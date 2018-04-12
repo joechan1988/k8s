@@ -4,7 +4,7 @@
 
 - 文件清单  
 
-  - 镜像包文件
+  - 安装包文件，路径tar/
   
   |文件名 | 描述 |
   |------|------|
@@ -15,9 +15,16 @@
   |calico.tar|calico组件镜像|
   |traefik.tar|Traefik组件镜像|
   |harbor.tar|Harbor镜像仓库安装文件|
-  |cluster.yml|部署配置文件|
+  
+  - 文档,路径doc/
+  
+  |文件名 | 描述 |
+  |------|------|
+  |deployment.md|部署文档|
+  |configuration.md|配置说明文档|
+  |cluster.yml|配置文件模板|
      
-  -  可执行程序文件
+  -  可执行程序文件(默认已包含在kde.tar中)
   
   |文件名 | 描述 |
   |------|------|

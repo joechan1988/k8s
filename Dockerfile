@@ -27,7 +27,11 @@ RUN apt-get update && \
 RUN apt-get install --no-install-recommends -y git python-yaml && \
     pip install --upgrade pip
 
-COPY ./ /kde/
+COPY ./kde /kde/kde
+COPY ./addons /kde/addons
+COPY ./bin /kde/bin
+COPY ./.git /kde/.git
+COPY ["./setup.py","./setup.cfg","./requirements.txt","ChangeLog","AUTHORS","/kde/"]
 WORKDIR /kde/
 
 RUN mkdir -p /tmp/bin && \
